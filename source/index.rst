@@ -11,8 +11,12 @@ Contents:
 .. toctree::
    :maxdepth: 2
    
+   
+   plugin-metrics
+   
    deploy
    config
+   
 
 Indices and tables
 ==================
