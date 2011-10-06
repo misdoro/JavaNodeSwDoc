@@ -13,6 +13,10 @@ Contents:
    
    intro
    
+   plugin-arch
+   plugin-datamodel
+   plugin-xsamsgen
+   plugin-querymap
    plugin-metrics
    
    deploy
@@ -20,3 +24,4 @@ Contents:
    
 
 
+..	[CAYDOC] http://cayenne.apache.org/doc30/modeler-guide.html
