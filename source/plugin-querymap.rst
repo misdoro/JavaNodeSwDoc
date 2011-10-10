@@ -103,4 +103,42 @@ Query mapping scenarios
 To obtain Apache Cayenne Expression object, several mapping scenarios are provided, plus plugin developer 
 is free to implement his own one.
 
+Mapping of logic tree
++++++++++++++++++++++++++
+
+Mapping of logic tree nodes is always trivial and is one-to-one with 
+Cayenne Expression.andExp(), Expression.orExp(), Expression.notExp(), see the Cayenne Javadoc [CAYJAVADOC]_
+
+Usable example of such mapper is provided in *org.vamdc.tapservice.query.QueryMapper* class (CayenneUtil library),
+that is bundled both with the TAPValidator and the node software.
+
+
+
+Mapping of RestrictExpression elements
+++++++++++++++++++++++++++++++++++++++++
+
+Mapping of RestrictExpression elements may be a bit more tricky, since they contain lots of information:
+
+*	prefix
+*	prefix index
+*	VAMDC dictionary keyword
+*	comparison operator
+*	value/value set
+
+VAMDC keyword itself may map to one or more database columns,
+for example, **MoleculeInchiKey** keyword, in case of a database that contains all species within one table,
+says that the field is **InchiKey** and that we must verify that species we are looking at are actually molecules.
+To correctly handle such a keyword we will need to AND two Cayenne Expressions and add them to the mapped tree.
+
+Currently such multi-field mapping can be implemented only on the node-specific basis.
+As an example of a simplier one-to-one mapping, the same *org.vamdc.tapservice.query.QueryMapper* class [QueryMapper]_ may be taken.
+
+Prefix and prefix index may also require a check for a certain field, like if element 
+is a reactant or product in chemical reaction.
+In this case it may make sense to loop over all defined prefixes using **Query.getPrefixes()** method, then
+filter the incoming query tree by the prefix with the **Query.getPrefixedTree(...)**, map it as usual,
+add the desired logic to the resulting expression and finally AND the mapped filtered subtree to the resulting query.
+
+
+
 

@@ -11,5 +11,5 @@ Apache Cayenne supports various database engines, notably, MySQL, PostgreSQL, SQ
 Creation of database objects is made simple thanks to the graphical modeler application,
 provided as a part of Cayenne.
 
-Process of creating a database model is well described in the project official documentation _[CAYDOC]
+Process of creating a database model is well described in the project official documentation [CAYDOC]_
 and there is no need to repeat it in this document.

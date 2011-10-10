@@ -54,7 +54,7 @@ Node-specific components
 In Java node software each node installation requires creating two code blocks:
 
 #. Database mapping classes with Apache Cayenne.
-	This task is well described in Cayenne documentation [CAYENNE]. Fancy graphical tool is provided.
+	This task is well described in Cayenne documentation [CAYENNE]_ . Fancy graphical tool is provided.
 	
 #. Node plugin, 
 	responsible for query translation into internal queries 

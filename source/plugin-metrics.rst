@@ -35,7 +35,7 @@ each XSAMS block elements:
 	
 
 getMetrics(...) method
----------------------
+------------------------
 	
 Producing such a response doesn't require to build a document tree, 
 so a dedicated plugin method is called by the node software 

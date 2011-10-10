@@ -6,7 +6,7 @@
 Java VAMDC-TAP node software documentation
 ======================================================================
 
-Contents:
+
 
 .. toctree::
    :maxdepth: 2
@@ -22,6 +22,4 @@ Contents:
    deploy
    config
    
-
-
-..	[CAYDOC] http://cayenne.apache.org/doc30/modeler-guide.html
+   biblio
