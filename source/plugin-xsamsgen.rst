@@ -118,7 +118,7 @@ which can be obtained by calling **getXsamsroot()** method of the request.
 
 **org.vamdc.xsams.XSAMSData** interface provides a handful of methods to add different branches to the XSAMS tree,
 getting them by known ID or iterating through all of them. For a full list of methods,
-consult the JavaDoc of the JAXB XSAMS library [XSAMSJavadoc]_.
+consult the JavaDoc of the JAXB XSAMS library [XSAMSJavaDoc]_.
 
 Notable are:
 
