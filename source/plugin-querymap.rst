@@ -57,8 +57,31 @@ provides access to the query tree and few utility methods.
 	Using that list as a main source for query mapping is discourages since it leads to the loss of logic.
 	
 
+In **getFilteredTree()** and **getPrefixedTree()** the filtering algorithm removes the irrelevant RestrictExpression
+objects from LogicNodes, then removes logicNodes that has no children.
 
+For example, in case of filtering by the prefix:
 
+*	Original query::
+
+		select ALL where reactant1.AtomSymbol='C' and reactant1.AtomIonCharge=1 
+		and reactant2.AtomSymbol='H' and reactant2.AtomIonCharge=-1 and temperature > 100
+
+*	Effective query for getPrefixedTree(VSSPrefix.REACTANT, 1)::
+
+		select ALL where reactant1.AtomSymbol='C' and reactant1.AtomIonCharge=1
+
+*	Effective query for getPrefixedTree(VSSPrefix.REACTANT, 2)::
+
+		select ALL where reactant2.AtomSymbol='H' and reactant2.AtomIonCharge=-1
+	
+*	Effective query for getPrefixedTree(null, 0)::
+
+		select ALL where temperature > 100
+	
+*	Effective query for getFilteredTree() with a collection containing only AtomSymbol::
+
+		select ALL where reactant1.AtomSymbol='C' and reactant2.AtomSymbol='H'
 
 
 LogicNode
@@ -89,7 +112,7 @@ plus
 Prefix
 +++++++++++++
 
-Prefix is a simple class, keeping **VSSPrefix** from dicrionary
+Prefix is a simple class, keeping **VSSPrefix** from the dictionary
 and integer index of the prefix.
 
 *	**int getIndex()** method provides access to index, and
@@ -100,7 +123,7 @@ and integer index of the prefix.
 Query mapping scenarios
 -------------------------
 
-To obtain Apache Cayenne Expression object, several mapping scenarios are provided, plus plugin developer 
+To obtain an Apache Cayenne Expression object, several mapping scenarios are provided, plus plugin developer 
 is free to implement his own one.
 
 Mapping of logic tree
