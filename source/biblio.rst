@@ -5,3 +5,7 @@
 ..	[QueryMapper] http://svn.ntl.nnov.ru/misdoro/cayenneutil/trunk/src/main/java/org/vamdc/tapservice/query/QueryMapper.java
 
 ..	[XSAMSJavaDoc] insert URL here
+
+..	[VAMDC-TAP] http://www.vamdc.org/documents/standards/dataAccessProtocol/vamdctap.html#http-header-information
+
+..	[VAMDCDict] http://www.vamdc.org/documents/standards/dictionary/

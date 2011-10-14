@@ -26,10 +26,14 @@ would map into a tree
 .. image:: img/queryTree.png
 
 
+
 Tree objects
 ---------------------
 
 Following objects are representing the query tree
+
+
+.. _query:
 
 Query
 ++++++++++++
