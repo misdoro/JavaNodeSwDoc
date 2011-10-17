@@ -3,7 +3,8 @@ Database plugin
 
 Interaction between the database plugin and the Java node software is performed through two compact interfaces.
 
-.. _DatabasePlug
+
+.. _DatabasePlug:
 
 DatabasePlug interface
 ------------------------
@@ -48,8 +49,9 @@ interface, defining the following methods:
 	
 	**WARNING!** this method should not be used for doing periodic maintenance since it is never called before
 	the first request to the */VOSI/availability* service endpoint.
+
 	
-.. _RequestInterface
+.. _RequestInterface:
 
 RequestInterface interface
 -------------------------------
@@ -76,7 +78,7 @@ Following methods are part of that interface:
 *	*public abstract Collection<RestrictExpression> getRestricts();*
 	The shortcut method to get all the keywords of the query, omitting the keywords relation logic.
 	
-	**WARNING!**This method should not be used as the main source of data for the query mapping since
+	**WARNING!** This method should not be used as the main source of data for the query mapping since
 	it completely looses the query relation logic. Imagine the query::
 	
 		SELECT ALL WHERE AtomSymbol='Ca' or AtomSymbol='Fe'
@@ -91,7 +93,7 @@ Following methods are part of that interface:
 *	*public abstract String getQueryString();*
 	The shortcut method to get the incoming query string.
 
-*	public abstract boolean checkBranch(Requestable branch);
+*	*public abstract boolean checkBranch(Requestable branch);*
 	The shortcut method for the Query.checkBranch(),
 	returns true if the result document is requested to contain a certain branch of XSAMS,
 	specified by the **org.vamdc.dictionary.Requestable** name.
