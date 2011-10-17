@@ -1,4 +1,4 @@
-.. _QueryMap:
+.. _QueryHandling:
 
 VSS query recognition and mapping
 =====================================
@@ -123,6 +123,8 @@ and integer index of the prefix.
 
 *	**VSSPrefix getPrefix()** gives access to the prefix name.
 
+
+.. _QueryMap:
 
 Query mapping scenarios
 -------------------------

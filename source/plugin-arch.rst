@@ -1,6 +1,45 @@
 Database plugin
 =========================
 
+.. requestflow
+
+Request processing
+--------------------
+
+In the course of normal operation, node software receives *HTTP GET* requests to the */TAP/sync* endpoint
+and must respond to them with valid XSAMS documents. 
+
+.. image:: img/queryProcess.png
+
+The following steps are performed to achieve that, Java VAMDC-TAP implementation (**Framework**)
+is responsible for some of them.
+Node **Plugin** is responsible for the others.
+The Apache Cayenne object-relational mapping framework is used to access the **Database**.
+
+*	On the query reception, **framework** asks the **plugin** for the list of supported **keywords**.
+
+*	**Framework** is parsing the incoming query, checking it's validity and converting it 
+	into a group of easily accessible :ref:`Query` objects.
+
+*	**Framework** asks **Plugin** to construct the document by calling the :ref:`databasePlug` buildXSAMS() method.
+
+*	**Plugin** maps the incoming query to one or more **Database** queries, 
+	as described in the :ref:`QueryMap`.
+	
+*	Before executing or mapping the queries, **Plugin** *should* check 
+	if the user actually requested the certain branch of XSAMS document to be built.
+	See the :ref:`RequestInterface` checkBranch() method for the details.
+	
+*	**Plugin** receives objects from the **Database**, builds **XSAMS** branches from them and 
+	gives those branches to the **Framework**. See the :ref:`XSAMSGen` section for the details.
+	
+*	When the document tree is built, **Plugin** returns the control to the **Framework**.
+
+*	**Framework** does the final checks on the document tree, calculates accurate metrics for the document.
+
+*	**Framework** converts the document tree into XML stream and sends it to the user.
+
+
 Interaction between the database plugin and the Java node software is performed through two compact interfaces.
 
 
@@ -98,7 +137,8 @@ Following methods are part of that interface:
 	returns true if the result document is requested to contain a certain branch of XSAMS,
 	specified by the **org.vamdc.dictionary.Requestable** name.
 	
-	This method should be called in all builders to verify if a certain branch should be built.
+	This method should be called in all builders to verify if a certain branch should be built,
+	before even executing or mapping the queries.
 	
 	The behaviour of the keywords is described in the VAMDC Dictionary documentation [VAMDCDict]_, 
 	the section **Requestables**
@@ -117,9 +157,5 @@ Following methods are part of that interface:
 	Get the **org.slf4j.Logger** object. All messages/errors reporting should be done with it.
 	
 	
-.. requestflow
 
-Request processing
---------------------
 
-This section describes the *HTTP GET* request to the */TAP/sync* endpoint.
