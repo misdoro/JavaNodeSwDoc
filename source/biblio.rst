@@ -9,3 +9,5 @@
 ..	[VAMDC-TAP] http://www.vamdc.org/documents/standards/dataAccessProtocol/vamdctap.html#http-header-information
 
 ..	[VAMDCDict] http://www.vamdc.org/documents/standards/dictionary/
+
+..	[TAPValidator] http://www.vamdc.org/software/
