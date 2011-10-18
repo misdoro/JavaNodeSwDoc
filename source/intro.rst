@@ -97,7 +97,8 @@ Common features
 Differencies
 ++++++++++++++
 
-*	The main architectural disagreement between the author of the Java implementation 
+* The main architectural disagreement 
+	between the author of the Java implementation 
 	and the authors of Python/Django one is the XML generator.
 	
 	Java version uses Document Object Model (DOM) mapping of the XML, node plugin needs to build XSAMS blocks
