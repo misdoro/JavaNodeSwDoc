@@ -55,7 +55,7 @@ Node-specific components
 In Java node software each node installation requires creating two code blocks:
 
 #. Database mapping classes with Apache Cayenne.
-	This task is well described in Cayenne documentation [CAYENNE]_ . Fancy graphical tool is provided.
+	This task is well described in Cayenne documentation [CAYDOC]_ . Fancy graphical tool is provided.
 	
 #. Node plugin, 
 	responsible for query translation into internal queries 
@@ -142,6 +142,41 @@ Differencies
 * Java implementation doesn't provide an import tool from ASCII files into a relational database
 	
 	Well, there was no need for such a tool. You may use Python one.
+
+
+
+Node implementation
+---------------------
+
+So, implementing a node using the Java Node Software would require the following steps:
+
+*	Create database model and classes, as described in the :ref:`datamodel` section.
+
+	After completing this step you will be able to access your database in a convenient way
+	from any Java software you develop. For the details, see the Apache Cayenne documentation. [CAYDOC]_
+	
+*	Create XSAMS tree builders, as described in the :ref:`XSAMSGen` section
+
+	Here you might need help from the person responsible for database to figure out what XSAMS elements
+	are appropriate for your database content.
+
+	After completing this step you will be able to test your node plugin: :ref:`plugintest`
+	The result would be the same for all queries, but it is normal.
+
+*	Define the supported restrictables and create mapping classes as described in the :ref:`QueryHandling` section.
+
+	When this step will be accomplished, you are more than half way through the implementation process.
+	You can test different queries and check if you are getting relevant XSAMS documents as the result.
+	
+*	The last development step would be to implement the query metrics 
+	to be fully compliant with the VAMDC-TAP standard.
+	See the :ref:`metrics` section for the implementation details.
+	
+*	After the node plugin is working, ask your servers manager to deploy the Java Node software 
+	on the application server, as it is described in the :ref:`deploy` section.
+	Test again using the TAPValidator in the network mode.
+	
+	
 	
 
-	
+

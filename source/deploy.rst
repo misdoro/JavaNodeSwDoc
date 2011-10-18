@@ -1,3 +1,5 @@
+.. _deploy:
+
 VAMDC-TAP node deployment
 ==============================
 
