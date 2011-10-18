@@ -154,13 +154,17 @@ So, implementing a node using the Java Node Software would require the following
 
 	After completing this step you will be able to access your database in a convenient way
 	from any Java software you develop. For the details, see the Apache Cayenne documentation. [CAYDOC]_
-	
+
+*	Set up the project for your plugin, understand the query process and interaction of the node and the plugin.
+	See the :ref:`plugin` section.
+
 *	Create XSAMS tree builders, as described in the :ref:`XSAMSGen` section
 
 	Here you might need help from the person responsible for database to figure out what XSAMS elements
 	are appropriate for your database content.
 
-	After completing this step you will be able to test your node plugin: :ref:`plugintest`
+	During this step you will be able to test your node plugin: :ref:`plugintest`.
+	Try to eliminate any validation errors.
 	The result would be the same for all queries, but it is normal.
 
 *	Define the supported restrictables and create mapping classes as described in the :ref:`QueryHandling` section.

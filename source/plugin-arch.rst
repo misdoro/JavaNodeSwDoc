@@ -1,7 +1,9 @@
+.. _plugin:
+
 Database plugin
 =========================
 
-.. requestflow
+.. _requestflow:
 
 Request processing
 --------------------
