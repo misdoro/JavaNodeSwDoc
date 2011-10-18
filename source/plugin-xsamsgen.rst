@@ -90,6 +90,14 @@ For each reference element we need to check if it is already attached to the XSA
 If not, then the mentioned above builder is called, and finally,
 after the SourceType object is built, it needs to be attached to the document tree::
 
+
+	public static List<SourceType> getSources(
+			List<RefsGroups> referenceRel, RequestInterface myrequest, boolean filterSource) {
+			
+	//This array is returned from the method and can be passed to the 
+	//addSources(Collection<SourceType>) method of all objects, requiring sources
+	ArrayList<SourceType> newsources = new ArrayList<SourceType>();
+	
 	/*Add all sources that are stated as 'isSource'*/
 	for (RefsGroups myref:referenceRel){
 		RefsArticles thisarticle = myref.getArticleRel();
@@ -107,8 +115,22 @@ after the SourceType object is built, it needs to be attached to the document tr
 			newsources.add(source);
 		}
 	}
-
 	
+	//Return the sources collection for later use.
+	return newsources;
+	}
+
+
+Later this list should be added to the element requiring source reference,
+for example, we create a new DataType value and have references attached to it::
+
+	DataType quantity = new DataType(table.value, table.units);
+	quantity.addSources(SourcesBuilder.getSources(table.sourceRelation,request,true));
+	
+Here, "table" is an object of your database model, providing value and units fields plus the relation to the sources.
+First, we need to create a quantity of the DataType, then we construct all related source elements, 
+automatically adding them to the XSAMS document tree if necessary, and attach to the quantity element.
+
 	
 Attaching objects to XSAMS Document tree
 ------------------------------------------
@@ -172,6 +194,90 @@ All those ID generation methods automatically add the configured node-specific I
 
 XSAMS JAXB convenience extensions
 -------------------------------------
+
+For convenience, all XSAMS object classes were extended and grouped into packages
+by the schema block they are appearing in:
+
+
+* org.vamdc.xsams.common
+	for elements used all around the schema
+* org.vamdc.xsams.environments
+	for elements from the Environments branch
+* org.vamdc.xsams.functions
+	for elements from the Functions branch
+* org.vamdc.xsams.methods
+	for elements from the Methods branch
+* org.vamdc.xsams.process
+	for elements from the Processes (collisions,transitions) branch
+* org.vamdc.xsams.sources
+	for elements from the Sources branch
+* org.vamdc.xsams.species
+	for elements from the Species (atoms, molecules, particles, solids) branch
+
+	
+	
+Few value constructors were added for convenience:
+
+*	class **org.vamdc.xsams.species.molecules.ReferencedTextType**::
+
+		public ReferencedTextType(String value);
+
+	Creates a ReferencedTextType element with the defined value
+	
+*	class **org.vamdc.xsams.sources.AuthorsType**::
+
+		public AuthorsType(Collection<String> authors)
+		public AuthorsType(String concatAuthors, String separator)
+	
+	First constructor creates Authors elemen with all authors from the passed collection,
+	second one splits the first argument using the separator from the second one and puts the
+	resulting strings into distinct Author records.
+	
+*	class **org.vamdc.xsams.sources.AuthorType**::
+
+        	public AuthorType(String name)
+        
+        Creates a single Author element with the name from the argument.
+        
+*	class **org.vamdc.xsams.common.TabulatedDataType**::
+
+		public TabulatedDataType(String... CoordsUnits);
+		public TabulatedDataType(Collection<String> columns);
+		
+	Constructors, defining multi-dimensional tables. Parameters passed define the units of axes,
+	the last element of the collection or the last string define the units for Y (values).
+	The *org.vamdc.xsams.common.TabulatedDataType* class contains a full set of methods for the
+	XSAMS tables manipulation, so if you need to use them it is 
+	worth reading the XSAMS library JavaDoc [XSAMSJavaDoc]_
+	
+*	class **org.vamdc.xsams.common.DataType**::
+        
+        	public DataType(Double value,String units, AccuracyType accuracy, String comments);
+        	public DataType(Double value,String units);
+        
+        You will certainly use DataType objects, since almost any quantity in XSAMS is represented by them.
+        Two constructors are provided, with parameter names speaking for themselves.
+        Source references may be attached to created object later 
+        by calling the *addSource()* or *addSources()* methods.
+        
+*	class **org.vamdc.xsams.common.ValueType**::
+
+	        public ValueType(Double value, String units);
+	        
+	ValueType, used as often as the DataType, supports no source reference and is a simple extension 
+	of the Double type, providing the *units* attribute. Convenience constructor is also provided for it.
+	
+*	class **org.vamdc.xsams.common.ChemicalElementType**::
+
+		public ChemicalElementType(int charge, String symbol);
+	
+	Used in Atoms and Solids branches, ChemicalElementType has a convenience constructor consuming
+	the atom nuclear charge and it's chemical element symbol.
+
+So far, this is the full list of all convenience constructors created for the XSAMS library.
+If you need more convenience constructors or methods to be added, 
+contact the Java node software authors and those methods would be included in the next software release.
+
 
 Case-By-Case generic builders
 --------------------------------
