@@ -16,8 +16,8 @@ Java VAMDC-TAP node software documentation
    plugin-arch
    plugin-test
    plugin-datamodel
-   plugin-querymap
    plugin-xsamsgen
+   plugin-querymap
    plugin-metrics
    
    deploy
