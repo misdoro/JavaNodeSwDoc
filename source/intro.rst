@@ -9,8 +9,8 @@ Creation of a separate implementation of the VAMDC-TAP node software in Java pur
 
 *	Give end-users a choice of the implementation language
 
-*	Architectural disagreements with Python node software author, notably the architecture of the XML generator 
-	(see the :ref:`diff` section)
+*	Architectural design of the XML generator based on the schema rather than on a non-hierarchical
+	dictionnary (as in Python/Django node software - see below the :ref:`diff` section)
 
 
 Used software
@@ -97,9 +97,8 @@ Common features
 Differencies
 ++++++++++++++
 
-* The main architectural disagreement 
-	between the author of the Java implementation 
-	and the authors of Python/Django one is the XML generator.
+* The main architectural difference
+	between the the Java implementation and the Python/Django one is the XML generator.
 	
 	Java version uses Document Object Model (DOM) mapping of the XML, node plugin needs to build XSAMS blocks
 	as trees of related objects.
