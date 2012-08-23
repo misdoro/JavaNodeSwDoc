@@ -1,18 +1,20 @@
 .. _XSAMSGen:
 
-XSAMS tree builders
+XSAMS tree building
 =========================
 
 XSAMS is an XML schema, adopted within VAMDC for data exchange.
 
 Java node software implementation uses JAXB library for mapping between objects and XML elements.
 
-Contrary to the Python/Django node software, Java version doesn't provide neither it's own XML generator, nor a plain
-list of mapping keywords (Returnables as they are called in Python version).
+Contrary to the Python/Django node software, Java version doesn't provide keyword-based XML generator.
 
 Each node plugin is responsible by itself for building object trees corresponding to the document branches and
 for attaching them to the main tree, managed by the node software.
 Node software than outputs the built tree as XML XSAMS document.
+
+
+
 
 Basically, XSAMS builders solve the same problem as Python node software Returnables dictionary.
 As input builder methods receive Apache Cayenne database model objects, and their job is to produce JAXB XSAMS objects 

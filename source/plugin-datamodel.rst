@@ -15,6 +15,22 @@ Process of creating and using a database model is well described in the project 
 and there is no need to repeat it in this document. Reading the Cayenne documentation is a **MUST** for the understanding
 and creating efficient query mapper routines and high performance database access classes.
 
+Step-by-step guide
+----------------------
+
+Create maven project
++++++++++++++++++++++++
+
+Import data model
++++++++++++++++++++++++
+
+Adjust data model
++++++++++++++++++++++
+
+Generate Java classes
+++++++++++++++++++++++
+
+Save cayenne project under src/main/resources
 
 Notable Cayenne features used
 -------------------------------
@@ -79,4 +95,6 @@ For such a case, Cayenne provides aliases mechanism::
 That last command tells the select query how to interpret the alias. 
 Because the aliases are different, the SQL generated will have two completely separate set of joins.
 This is called a "split path".
+
+
 

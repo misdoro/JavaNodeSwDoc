@@ -8,8 +8,8 @@ Database plugin
 Request processing
 --------------------
 
-In the course of normal operation, node software receives *HTTP GET* requests to the */TAP/sync* endpoint
-and must respond to them with valid XSAMS documents. 
+In the course of normal operation, node software receives *HTTP GET* and *HTTP HEAD* requests to the */TAP/sync* 
+endpoint and must respond to them with valid XSAMS documents or only response headers respectively. 
 
 .. image:: img/queryProcess.png
 
@@ -32,8 +32,8 @@ The Apache Cayenne object-relational mapping framework is used to access the **D
 	if the user actually requested the certain branch of XSAMS document to be built.
 	See the :ref:`RequestInterface` checkBranch() method for the details.
 	
-*	**Plugin** receives objects from the **Database**, builds **XSAMS** branches from them and 
-	gives those branches to the **Framework**. See the :ref:`XSAMSGen` section for the details.
+*	**Plugin** receives objects from the **Database**, builds **XSAMS** blocks from them and 
+	gives those blocks to the **Framework**. See the :ref:`XSAMSGen` section for the details.
 	
 *	When the document tree is built, **Plugin** returns the control to the **Framework**.
 
@@ -47,7 +47,7 @@ Interaction between the database plugin and the Java node software is performed 
 
 .. _DatabasePlug:
 
-DatabasePlug interface
+DatabasePlugin interface
 ------------------------
 
 Each and every node plugin must implement the **org.vamdc.tapservice.api.DatabasePlug** 
@@ -64,7 +64,7 @@ interface, defining the following methods:
 	Build XSAMS document tree from the user request. 
 	Object implementing **org.vamdc.tapservice.api.RequestInterface** :ref:`RequestInterface`
 	is passed as a parameter. No return is expected.
-	This method is called every time the node software is receiving a request to the */VOSI/capabilities* endpoint.
+	This method is called every time the node software is receiving an *HTTP GET* request to the */TAP/sync?* endpoint.
 	
 	**WARNING!** Node plugin object is instantiated only once when the node is started,
 	all calls to buildXSAMS should be thread-safe to handle concurrent requests correctly.
@@ -74,7 +74,7 @@ interface, defining the following methods:
 *	*public abstract Map<Dictionary.HeaderMetrics,Integer> getMetrics(RequestInterface userRequest);*
 	
 	Get query metrics. This method is called every time 
-	the node receives the HEAD request to the */VOSI/capabilities* endpoint.
+	the node receives the HEAD request to the */TAP/sync?* endpoint.
 	*RequestInterface userRequest* parameter is identical to the one passed to buildXSAMS method.
 	This method should return a map of VAMDC-COUNT-* HTTP header names and their estimate values.
 	For the header names and meaning, see [VAMDC-TAP]_ documentation
@@ -122,11 +122,11 @@ Following methods are part of that interface:
 	**WARNING!** This method should not be used as the main source of data for the query mapping since
 	it completely looses the query relation logic. Imagine the query::
 	
-		SELECT ALL WHERE AtomSymbol='Ca' or AtomSymbol='Fe'
+		SELECT * WHERE AtomSymbol='Ca' OR AtomSymbol='Fe'
 		
 	If this method is used for the query mapping, this query would produce the same result as the query::
 	
-		SELECT ALL WHERE AtomSymbol='Ca' AND AtomSymbol='Fe' 
+		SELECT * WHERE AtomSymbol='Ca' AND AtomSymbol='Fe' 
 		
 	which is obviously incorrect.
 	
@@ -150,7 +150,7 @@ Following methods are part of that interface:
 	For more information on using the Apache Cayenne look in the sections :ref:`datamodel` and :ref:`QueryMap`.
 
 	
-*	*public abstract XSAMSData getXsamsroot();*
+*	*public abstract XSAMSManager getXsamsManager();*
 	Get XSAMS tree manager, containing several helper methods.
 	All XSAMS branches built by the node plugin should be attached to it.
 	 
@@ -158,6 +158,10 @@ Following methods are part of that interface:
 	
 	Get the **org.slf4j.Logger** object. All messages/errors reporting should be done with it.
 	
+*	*public abstract void setLastModified(Date date);*
 	
+	Set the last-modified header of the response. May be called anywhere during request processing 
+	for any number of times. If called more than once, the last modification date is updated only if
+	the subsequent date is newer than communicated before.
 
 
