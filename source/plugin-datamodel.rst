@@ -18,19 +18,100 @@ and creating efficient query mapper routines and high performance database acces
 Step-by-step guide
 ----------------------
 
+Here is a small illustrated guide on creating database mappings.
+We will need Cayenne modeler application, it can be downloaded from 
+http://cayenne.apache.org/download.html as a part of binary distribution.
+
+
 Create maven project
 +++++++++++++++++++++++
 
-Import data model
+First we need to generate a Maven project::
+
+	mvn archetype:generate \
+	  -DarchetypeGroupId=org.apache.maven.archetypes \
+	  -DgroupId=org.vamdc.database \
+	  -DartifactId=daoclasses
+	  
+and create folder src/main/resources
+where we will put cayenne modeler files.
+
+Maven pom.xml can be replaced with the following contents::
+
+	<project xmlns="http://maven.apache.org/POM/4.0.0" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+			http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		<modelVersion>4.0.0</modelVersion>
+		<groupId>org.vamdc.databaseName</groupId>
+		<artifactId>node_dao</artifactId>
+		<version>12.07</version>
+		<name>databaseName database objects</name>
+
+		<parent>
+			<groupId>org.vamdc.tap</groupId>
+			<artifactId>cayenne_dao</artifactId>
+			<version>12.07</version>
+		</parent>
+		
+		<repositories>
+			<repository>
+				<id>vamdc repository</id>
+				<name>VAMDC stuff for Maven</name>
+				<url>http://dev.vamdc.org/nexus/content/repositories/releases</url>
+				<layout>default</layout>
+			</repository>
+		</repositories>
+	</project>
+
+Create Cayenne classes
 +++++++++++++++++++++++
 
-Adjust data model
-+++++++++++++++++++++
+Let's open cayenne modeler application and create a new project:
 
-Generate Java classes
-++++++++++++++++++++++
+.. image:: img/cayenne/1.png
 
-Save cayenne project under src/main/resources
+Now we need a dataNode describing database connection
+
+.. image:: img/cayenne/2.png
+
+And a dataMap that will contain all mapping tables and classes
+
+.. image:: img/cayenne/3.png
+
+After the DataMap is created, we need to import the database schema:
+
+.. image:: img/cayenne/4.png
+
+.. image:: img/cayenne/5.png
+
+.. image:: img/cayenne/6.png
+
+**!Note** the "Meaningful PK" flag is set for the sake of the generated classes to have
+getters for the table primary key field.
+
+As a result for each database table a separate Java class is generated, containing attribute fields and relationship
+references.
+
+.. image:: img/cayenne/7.png
+
+.. image:: img/cayenne/8.png
+
+For many-to-many relations relationships need to be created manually:
+create a new relationship, press on the violet I button, indicate the path in the bottom of the window.
+.. image:: img/cayenne/9.png
+
+The last step is to generate class objects:
+
+.. image:: img/cayenne/10.png
+
+.. image:: img/cayenne/11.png
+
+.. image:: img/cayenne/12.png
+
+As a destination directory, src/main/java of Maven project needs to be specified.
+Cayenne project itself needs to be saved next to it, in src/main/resources.
+
 
 Notable Cayenne features used
 -------------------------------

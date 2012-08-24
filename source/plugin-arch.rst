@@ -53,16 +53,16 @@ DatabasePlugin interface
 Each and every node plugin must implement the **org.vamdc.tapservice.api.DatabasePlug** 
 interface, defining the following methods:
 
-*	*public abstract Collection<Restrictable> getRestrictables();*
+*	**public abstract Collection<Restrictable> getRestrictables();**
 	
 	get restrictables supported by this node.
 	Must return a collection of **org.vamdc.dictionary.Restrictable** dictionary elements.
 	This method is called once per each request to the */TAP/sync* and */VOSI/capabilities* endpoints.
 	
-*	*public abstract void buildXSAMS (RequestInterface userRequest);*
+*	**public abstract void buildXSAMS (RequestInterface userRequest);**
 	
 	Build XSAMS document tree from the user request. 
-	Object implementing **org.vamdc.tapservice.api.RequestInterface** :ref:`RequestInterface`
+	Object implementing :ref:`RequestInterface`
 	is passed as a parameter. No return is expected.
 	This method is called every time the node software is receiving an *HTTP GET* request to the */TAP/sync?* endpoint.
 	
@@ -71,7 +71,7 @@ interface, defining the following methods:
 	
 	Implementation details are covered in the :ref:`XSAMSGen` section.
 	
-*	*public abstract Map<Dictionary.HeaderMetrics,Integer> getMetrics(RequestInterface userRequest);*
+*	**public abstract Map<Dictionary.HeaderMetrics,Integer> getMetrics(RequestInterface userRequest);**
 	
 	Get query metrics. This method is called every time 
 	the node receives the HEAD request to the */TAP/sync?* endpoint.
@@ -80,7 +80,7 @@ interface, defining the following methods:
 	For the header names and meaning, see [VAMDC-TAP]_ documentation
 	
 	
-*	*public abstract boolean isAvailable();*
+*	**public abstract boolean isAvailable();**
 	
 	Do some really node-specific availability checks. This method is called
 	periodically from the availability monitor. First call is initiated after the first request
@@ -103,20 +103,20 @@ node software facilities.
 
 Following methods are part of that interface:
 
-*	*public abstract boolean isValid();*
+*	**public abstract boolean isValid();**
 	this method returns **true** if the incoming request is valid and should be processed.
 	
 	In case of the **false** return, node plugin should not do any processing. Query string may be saved for logging
 	purposes.
 
-*	*public abstract Query getQuery();*
+*	**public abstract Query getQuery();**
 	This method returns the base object of the QueryParser library. Query interface is described
 	in the :ref:`query` section of this document. A few shortcut methods are provided.
 	
-*	*public abstract LogicNode getRestrictsTree();*
+*	**public abstract LogicNode getRestrictsTree();**
 	The shortcut method to get the logic tree of the incoming query.
 	
-*	*public abstract Collection<RestrictExpression> getRestricts();*
+*	**public abstract Collection<RestrictExpression> getRestricts();**
 	The shortcut method to get all the keywords of the query, omitting the keywords relation logic.
 	
 	**WARNING!** This method should not be used as the main source of data for the query mapping since
@@ -131,10 +131,10 @@ Following methods are part of that interface:
 	which is obviously incorrect.
 	
 	
-*	*public abstract String getQueryString();*
+*	**public abstract String getQueryString();**
 	The shortcut method to get the incoming query string.
 
-*	*public abstract boolean checkBranch(Requestable branch);*
+*	**public abstract boolean checkBranch(Requestable branch);**
 	The shortcut method for the Query.checkBranch(),
 	returns true if the result document is requested to contain a certain branch of XSAMS,
 	specified by the **org.vamdc.dictionary.Requestable** name.
@@ -145,20 +145,20 @@ Following methods are part of that interface:
 	The behaviour of the keywords is described in the VAMDC Dictionary documentation [VAMDCDict]_, 
 	the section **Requestables**
 	
-*	*public abstract ObjectContext getCayenneContext();*
+*	**public abstract ObjectContext getCayenneContext();**
 	Get Apache Cayenne object context. That is the main endpoint of the Cayenne ORM library.
 	For more information on using the Apache Cayenne look in the sections :ref:`datamodel` and :ref:`QueryMap`.
 
 	
-*	*public abstract XSAMSManager getXsamsManager();*
+*	**public abstract XSAMSManager getXsamsManager();**
 	Get XSAMS tree manager, containing several helper methods.
 	All XSAMS branches built by the node plugin should be attached to it.
 	 
-*	*public abstract Logger getLogger(Class<?> classname);*
+*	**public abstract Logger getLogger(Class<?> classname);**
 	
 	Get the **org.slf4j.Logger** object. All messages/errors reporting should be done with it.
 	
-*	*public abstract void setLastModified(Date date);*
+*	**public abstract void setLastModified(Date date);**
 	
 	Set the last-modified header of the response. May be called anywhere during request processing 
 	for any number of times. If called more than once, the last modification date is updated only if

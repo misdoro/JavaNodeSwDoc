@@ -69,7 +69,7 @@ For example, in case of filtering by the prefix:
 *	Original query::
 
 		select ALL where reactant1.AtomSymbol='C' and reactant1.AtomIonCharge=1 
-		and reactant2.AtomSymbol='H' and reactant2.AtomIonCharge=-1 and temperature > 100
+		and reactant2.AtomSymbol='H' and reactant2.AtomIonCharge=-1 and EnvironmentTemperature > 100
 
 *	Effective query for getPrefixedTree(VSSPrefix.REACTANT, 1)::
 
@@ -138,10 +138,8 @@ Mapping of logic tree
 Mapping of logic tree nodes is always trivial and is one-to-one with 
 Cayenne Expression.andExp(), Expression.orExp(), Expression.notExp(), see the Cayenne Javadoc [CAYJAVADOC]_
 
-Usable example of such mapper is provided in *org.vamdc.tapservice.query.QueryMapper* class (CayenneUtil library),
+Usable example of such mapper is provided in *org.vamdc.tapservice.query.QueryMapper* class (vamdctap-querymapper library),
 that is bundled both with the TAPValidator and the node software.
-
-
 
 Mapping of RestrictExpression elements
 ++++++++++++++++++++++++++++++++++++++++
@@ -159,9 +157,6 @@ for example, **MoleculeInchiKey** keyword, in case of a database that contains a
 says that the field is **InchiKey** and that we must verify that species we are looking at are actually molecules.
 To correctly handle such a keyword we will need to AND two Cayenne Expressions and add them to the mapped tree.
 
-Currently such multi-field mapping can be implemented only on the node-specific basis.
-As an example of a simplier one-to-one mapping, the same *org.vamdc.tapservice.query.QueryMapper* class [QueryMapper]_ may be taken.
-
 Prefix and prefix index may also require a check for a certain field, like if element 
 is a reactant or product in chemical reaction.
 In this case it may make sense to loop over all defined prefixes using **Query.getPrefixes()** method, then
@@ -169,5 +164,51 @@ filter the incoming query tree by the prefix with the **Query.getPrefixedTree(..
 add the desired logic to the resulting expression and finally AND the mapped filtered subtree to the resulting query.
 
 
+Query Mapping Library
+--------------------------
+
+As a part of Java node software, a Query Mapper implementation is provided.
+It is able to map incoming query trees into cayenne Expression objects.
+Query Mapper implementation is a part of **vamdctap-querymapper** library,
+represented by two interfaces and two generic implementations within a package
+*org.vamdc.tapservice.querymapper*
+
+	
+*	**KeywordMapper** interface
+*	**KeywordMapperImpl** generic implementation, providing one-to-one mapping of
+	Restrictable keywords to database fields without value transformation.
+	In many cases node plugin may use extensions of this class, implementing value translation,
+	to-many fields mapping or prefix-conditional mapping.
+
+*	**QueryMapper** interface
+*	**QueryMapperImpl** generic implementation, keeping references to KeywordMappers 
+	and responsible for mapping parsed query trees to Cayenne Expressions.
+
+Using QueryMapper library
+++++++++++++++++++++++++++++++++++
+From the plugin side work with the mapper library is performed the following way:
+
+*	In some class we initialize a static variable QueryMapper,
+	in constructor adding keyword mappers::
 
 
+		public final static QueryMapper queryMapper= new QueryMapperImpl(){{
+			this.addMapper(
+					new KeywordMapperImpl(Restrictable.IonCharge)
+					.addNewPath("symelementRel.elementRel.charge")
+					.addNewPath("partyRel.elementRel.charge")
+					);
+		}};
+	
+	Here subsequent calls to addNewPath define cayenne relations path
+	originating from different primary tables, both used for mapping.
+	The first call is for species query, the second for processes.
+
+*	Own extensions of KeywordMapperImpl may be implemented to add some complex translations.
+	
+*	QueryMapper automatically keeps a list of Restrictable keywords supported by node,
+	it can be fetched using **public Collection<Restrictable> getRestrictables();** method.
+	
+*	From XSAMS builder methods **mapAliasedTree(...)** or **mapTree(...)** methods are called to construct 
+	Cayenne Expressions from incoming query trees or filtered subtrees.
+	

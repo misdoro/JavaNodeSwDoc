@@ -7,82 +7,72 @@ XSAMS is an XML schema, adopted within VAMDC for data exchange.
 
 Java node software implementation uses JAXB library for mapping between objects and XML elements.
 
-Contrary to the Python/Django node software, Java version doesn't provide keyword-based XML generator.
+Contrary to the Python/Django node software, Java version doesn't provide limited keyword-based XML generator.
 
 Each node plugin is responsible by itself for building object trees corresponding to the document branches and
 for attaching them to the main tree, managed by the node software.
 Node software than outputs the built tree as XML XSAMS document.
 
 
-
-
-Basically, XSAMS builders solve the same problem as Python node software Returnables dictionary.
-As input builder methods receive Apache Cayenne database model objects, and their job is to produce JAXB XSAMS objects 
-with relevant attributes copied. 
+XSAMS objects can be constructed by extension of Jaxb mapping classes with convenience methods,
+provided within **xsams-extra** library.
+Constructors can receive Cayenne mapping objects as argument and initialize appropriate mapping XML fields.
 Such an approach allows to instantly apply an arbitrary processing to any field/element value or their combinations.
 
-Example builder class
+
+Example constructor class
 -------------------------
 
-As an example let's look at the BASECOL Source element builder. 
-The full source is available in **org.vamdc.basecol.builders.SourcesTypeBuilder** class.
-Here follow some extracts from it.
+As an example let's look at the BASECOL Source element constructor::
 
-The only public method available is::
+	package org.vamdc.basecol.xsams;
 
-	public static List<SourceType> getSources(
-			List<RefsGroups> referenceRel, 
-			RequestInterface myrequest, 
-			boolean filterSource)
+	import java.util.ArrayList;
+	import java.util.List;
 
-It accepts as parameters
+	import org.vamdc.basecol.dao.RefsArticles;
+	import org.vamdc.basecol.dao.RefsGroups;
+	import org.vamdc.xsams.XSAMSManager;
+	import org.vamdc.xsams.schema.SourceCategoryType;
+	import org.vamdc.xsams.schema.SourceType;
+	import org.vamdc.xsams.util.IDs;
 
-*	the list of BASECOL model bibliography objects, as they are returned by relations
-*	request, providing interface for XSAMS document tree and the incoming query tree
-*	BASECOL-specific boolean switch that may change the behaviour of method, when needed.
+	public class Source extends SourceType{
 
-and returns the list of SourceType objects that can be attached to any JAXB object corresponding to the element
-extending XSAMS PrimaryType.
+		public Source(RefsArticles article){
 
-SourceType objects are built by a simple method, accepting Cayenne object as a parameter.
-::
+			setSourceID(IDs.getSourceID(article.getArticleID().intValue()));
+			setCategory(SourceCategoryType.fromValue(article.getJournalRel().getCategory()));
 
-	private static SourceType getSource(RefsArticles thisarticle) {
-		
-		SourceType source = new SourceType();
-		
-		source.setSourceID(
-				IDs.getSourceID(thisarticle.getArticleID().intValue()));
-		source.setCategory(SourceCategoryType.fromValue(thisarticle.getJournalRel().getCategory()));
-		source.setSourceName(thisarticle.getJournalRel().getSmallName());
+			setSourceName(article.getJournalRel().getSmallName());
 
-		XMLGregorianCalendar cal = null;
-		try{
-			cal = DatatypeFactory.newInstance().newXMLGregorianCalendar();
-			cal.setYear(thisarticle.getYear().intValue());
-			cal.setTimezone(DatatypeConstants.FIELD_UNDEFINED);
-		}catch (DatatypeConfigurationException e) {
-			e.printStackTrace();
+			//Year
+			setYear(article.getYear().intValue());
+
+			//Authors
+			setAuthors(new Authors(article.getFlatAuthorRel()));				
+			//Title
+			setTitle(article.getTitle());	
+			//URL
+			setUniformResourceIdentifier(article.getUrl());
+			//Volume
+			setVolume(article.getVolume());
+			//Pages
+			String pagesbe = article.getPage();
+			if (pagesbe!=null){
+
+				if (pagesbe.contains("-")){
+					fillPages(pagesbe,"-");
+				}else if (pagesbe.contains("\\+")){
+					fillPages(pagesbe,"+");
+				}
+			};
+
 		}
-		source.setYear(cal);
-
-		//Authors
-		source.setAuthors(buildAuthors(thisarticle.getFlatAuthorRel()));				
-		//Title
-		source.setTitle(thisarticle.getTitle());	
-		//URL
-		source.setUniformResourceIdentifier(thisarticle.getUrl());
-		//Volume
-		source.setVolume(thisarticle.getVolume());
-		//Pages
-		String pagesbe = thisarticle.getPage();
-		if (pagesbe!=null){
-			String[] pages = pagesbe.split("--");
-			source.setPageBegin(pages[0]);
-			if (pages.length>1)source.setPageEnd(pages[1]);
-		};
-		return source;
+		//...
 	}
+
+The full source is available in **org.vamdc.basecol.xsams.Source** class.
 
 Here, RefsArticles is a BASECOL Cayenne mapping object identifying one source record, 
 and SourceType is a root element of XSAMS Sources branch. 
@@ -95,32 +85,35 @@ after the SourceType object is built, it needs to be attached to the document tr
 
 
 	public static List<SourceType> getSources(
-			List<RefsGroups> referenceRel, RequestInterface myrequest, boolean filterSource) {
+			List<RefsGroups> referenceRel, 
+			XSAMSManager document, 
+			boolean filterSource) {
 			
-	//This array is returned from the method and can be passed to the 
-	//addSources(Collection<SourceType>) method of all objects, requiring sources
-	ArrayList<SourceType> newsources = new ArrayList<SourceType>();
-	
-	/*Add all sources that are stated as 'isSource'*/
-	for (RefsGroups myref:referenceRel){
-		RefsArticles thisarticle = myref.getArticleRel();
-		if (thisarticle!=null && (myref.getIsSource() || !filterSource)){
-			SourceType source = null;
-			//Check if source with this ID already exists:
-			if (myrequest!=null) source = myrequest.getXsamsroot().getSource(
-					IDs.getSourceID(thisarticle.getArticleID().intValue())); 
-			//If not, create it:
-			if (source == null){
-				source = getSource(thisarticle);
-				if (myrequest!=null) myrequest.getXsamsroot().addSource(source);
+		//Here sources will be added
+		ArrayList<SourceType> result = new ArrayList<SourceType>();
+
+		/*always add database self-reference*/
+		result.add(document.getSource(IDs.getSourceID(0)));
+
+		if (referenceRel==null)
+			return result;
+
+		/*Add all sources that are stated as 'isSource'*/
+		for (RefsGroups myref:referenceRel){
+			RefsArticles article = myref.getArticleRel();
+			if (article!=null && (myref.getIsSource() || !filterSource)){
+				//Check if source with this ID was already referenced:
+				SourceType source = document.getSource(
+						IDs.getSourceID(article.getArticleID().intValue())); 
+				if (source == null){//If not, create and add it:
+					source = new Source(article);
+					document.addSource(source);
+				}
+				//Now, add source record to the list of source references
+				result.add(source);
 			}
-			//Now, add source record to the list of source references:
-			newsources.add(source);
 		}
-	}
-	
-	//Return the sources collection for later use.
-	return newsources;
+		return result;
 	}
 
 
@@ -128,7 +121,7 @@ Later this list should be added to the element requiring source reference,
 for example, we create a new DataType value and have references attached to it::
 
 	DataType quantity = new DataType(table.value, table.units);
-	quantity.addSources(SourcesBuilder.getSources(table.sourceRelation,request,true));
+	quantity.addSources(Source.getSources(table.sourceRelation,request,true));
 	
 Here, "table" is an object of your database model, providing value and units fields plus the relation to the sources.
 First, we need to create a quantity of the DataType, then we construct all related source elements, 
@@ -138,10 +131,10 @@ automatically adding them to the XSAMS document tree if necessary, and attach to
 Attaching objects to XSAMS Document tree
 ------------------------------------------
 
-**RequestInterface** provides access to XSAMS Document tree through **XSAMSData** interface, implementation of
-which can be obtained by calling **getXsamsroot()** method of the request.
+**RequestInterface** provides access to XSAMS Document tree through **XSAMSManager** interface, implementation of
+which can be obtained by calling **getXsamsManager()** method of the request.
 
-**org.vamdc.xsams.XSAMSData** interface provides a handful of methods to add different branches to the XSAMS tree,
+**org.vamdc.xsams.XSAMSManager** interface provides a handful of methods to add different branches to the XSAMS tree,
 getting them by known ID or iterating through all of them. For a full list of methods,
 consult the JavaDoc of the JAXB XSAMS library [XSAMSJavaDoc]_.
 
@@ -219,7 +212,7 @@ by the schema block they are appearing in:
 
 	
 	
-Few value constructors were added for convenience:
+Few value constructors were added:
 
 *	class **org.vamdc.xsams.species.molecules.ReferencedTextType**::
 
@@ -321,8 +314,4 @@ that should be fed direcly to the XSAMS library by calling the::
 	RequestInterface.getXsamsroot().addState(speciesID, molecularState);
 
 Obviously, the element corresponding to the speciesID should already be there.
-
-
-
-
 
