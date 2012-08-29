@@ -2,9 +2,9 @@
 
 ..	[CAYJAVADOC] http://cayenne.apache.org/doc30/api/index.html
 
-..	[QueryMapper] http://svn.ntl.nnov.ru/misdoro/cayenneutil/trunk/src/main/java/org/vamdc/tapservice/query/QueryMapper.java
+..	[XSAMSJavaDoc] http://dev.vamdc.org/nexus/content/repositories/releases/org/vamdc/xml/
 
-..	[XSAMSJavaDoc] insert URL here
+..	[JavaNodeSoftware] http://www.vamdc.org/software/
 
 ..	[VAMDC-TAP] http://www.vamdc.org/documents/standards/dataAccessProtocol/vamdctap.html#http-header-information
 

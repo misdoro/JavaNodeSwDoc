@@ -30,7 +30,7 @@ Open the project properties of your database plugin.
 .. _buildpath:
 
 Adding VAMDC-TAP Validator to the build path
-+++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 .. image:: img/validator/buildpath.png
