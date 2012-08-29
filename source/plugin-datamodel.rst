@@ -99,6 +99,7 @@ references.
 
 For many-to-many relations relationships need to be created manually:
 create a new relationship, press on the violet I button, indicate the path in the bottom of the window.
+
 .. image:: img/cayenne/9.png
 
 The last step is to generate class objects:
