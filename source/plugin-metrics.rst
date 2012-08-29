@@ -32,7 +32,9 @@ each XSAMS block elements:
 	
 * *VAMDC-COUNT-NONRADIATIVE*
 	Count of the **NonRadiativeTransition** elements of the **Processes** branch of XSAMS.
-	
+
+* *Last-Modified* HTTP header can also be sent to client to indicate the time when the extracted 
+	data was modified last time.
 
 getMetrics(...) method
 ------------------------
@@ -43,19 +45,24 @@ for each HEAD request.
 	
 ::	
 	
-	public abstract Map<Dictionary.HeaderMetrics,Integer> getMetrics(RequestInterface userRequest);
+	public abstract Map<Dictionary.HeaderMetrics,Object> getMetrics(RequestInterface userRequest);
 	
-**userRequest**	has the same interface as the parameter of buildXSAMS method,
-but it doesn't expect to have XSAMS tree attached.
+**userRequest**	has the same interface as the parameter of *buildXSAMS* method,
+but it doesn't expect to have XSAMS tree objects attached, so *XSAMSManager* object should not be accessed.
 
 Typical logic of the method would be like that:
 
-* translate the query using the same method as builders use,
+* Translate the query using the same translation strategy as builders use;
 
-* convert the query into Count() using org.vamdc.tapservice.query.CountQuery.count(DataContext,SelectQuery) static method
+* Convert the query into Count() using 
+	*org.vamdc.tapservice.query.QueryUtil.countQuery(DataContext,SelectQuery)* static method;
 
-* add the resulting value to the map of headers
+* Add the resulting value to the map of headers;
 
+* If header value is greater than zero, set the value for *Last-Modified* header 
+	using RequestInterface *setLastModified(...)* method and 
+	*org.vamdc.tapservice.query.QueryUtil.lastTimestampQuery(...)* translator to obtain the 
+	value from a database last-modified date column.
 * iterate if more then one builder is normally used
 
 
@@ -77,27 +84,39 @@ Here follows the sample implementation from BASECOL database plugin
 	
 and Metrics.estimate has the following implementation::
 
-	public static Map<HeaderMetrics, Integer> estimate (RequestInterface request){
-		Map<HeaderMetrics, Integer> estimates = new HashMap<HeaderMetrics, Integer>();
+	public static Map<HeaderMetrics, Object> estimate (RequestInterface request){
+		Map<HeaderMetrics, Object> estimates = new HashMap<HeaderMetrics, Object>();
 		
 		//Estimate collisions
-		Expression colExpression = CollisionalTransitionBuilder.getExpression(request);
+		Expression colExpression = CollisionalTransitionBuilder.getCayenneExpression(request);
 		SelectQuery query=new SelectQuery(Collisions.class,colExpression);
-		Long collisions = CountQuery.count((DataContext) request.getCayenneContext(), query);
+		Long collisions = QueryUtil.countQuery((DataContext) request.getCayenneContext(), query);
 		
-		if (collisions>0)
+		if (collisions>0){
 			estimates.put(HeaderMetrics.VAMDC_COUNT_COLLISIONS, collisions.intValue());
+			
+			request.setLastModified(QueryUtil.lastTimestampQuery(
+					(DataContext) request.getCayenneContext(), 
+					query, 
+					"modificationDate"));
+		}
 		
 		//Estimate species
 		Expression spExpression = ElementBuilder.getExpression(request);
 		SelectQuery spQuery=new SelectQuery(EnergyTables.class,spExpression);
-		Long etables = CountQuery.count((DataContext) request.getCayenneContext(), spQuery);
+		Long etables = QueryUtil.countQuery((DataContext) request.getCayenneContext(), spQuery);
 		
-		if (etables>0)
+		if (etables>0){
 			estimates.put(HeaderMetrics.VAMDC_COUNT_SPECIES, etables.intValue());
+			
+			request.setLastModified(QueryUtil.lastTimestampQuery(
+					(DataContext) request.getCayenneContext(), 
+					spQuery, 
+					"modificationDate"));
+		}
 		
 		return estimates;
 		
 	}
 
-Here, getExpression(...) methods are the same translator methods as used in corresponding builders.
+Here, getExpression(...) methods are the same translator methods as used in corresponding XSAMS builders.

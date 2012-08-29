@@ -30,7 +30,7 @@ would map into a tree
 Tree objects
 ---------------------
 
-Following objects are representing the query tree
+Following objects are representing the incoming query tree
 
 
 .. _query:
@@ -81,7 +81,7 @@ For example, in case of filtering by the prefix:
 	
 *	Effective query for getPrefixedTree(null, 0)::
 
-		select ALL where temperature > 100
+		select ALL where EnvironmentTemperature > 100
 	
 *	Effective query for getFilteredTree() with a collection containing only AtomSymbol::
 
@@ -174,22 +174,24 @@ represented by two interfaces and two generic implementations within a package
 *org.vamdc.tapservice.querymapper*
 
 	
-*	**KeywordMapper** interface
+*	**KeywordMapper** interface defining an interface of RestrictExpression mapper;
 *	**KeywordMapperImpl** generic implementation, providing one-to-one mapping of
 	Restrictable keywords to database fields without value transformation.
 	In many cases node plugin may use extensions of this class, implementing value translation,
 	to-many fields mapping or prefix-conditional mapping.
 
-*	**QueryMapper** interface
+*	**QueryMapper** interface defining the library main interface;
 *	**QueryMapperImpl** generic implementation, keeping references to KeywordMappers 
-	and responsible for mapping parsed query trees to Cayenne Expressions.
+	and responsible for mapping parsed query trees to Cayenne Expressions. Boolean logic operations
+	between nodes are translated one-to-one with Cayenne andExp, orExp and notExp, KeywordMappers are
+	called for each RestrictExpression encountered.
 
 Using QueryMapper library
 ++++++++++++++++++++++++++++++++++
 From the plugin side work with the mapper library is performed the following way:
 
 *	In some class we initialize a static variable QueryMapper,
-	in constructor adding keyword mappers::
+	in constructor adding keyword mappers for each keyword supported by the node::
 
 
 		public final static QueryMapper queryMapper= new QueryMapperImpl(){{
@@ -200,11 +202,13 @@ From the plugin side work with the mapper library is performed the following way
 					);
 		}};
 	
-	Here subsequent calls to addNewPath define cayenne relations path
+	Here subsequent calls to **addNewPath** method define cayenne relations path
 	originating from different primary tables, both used for mapping.
 	The first call is for species query, the second for processes.
 
-*	Own extensions of KeywordMapperImpl may be implemented to add some complex translations.
+*	Own extensions of KeywordMapperImpl may be implemented to add the possibility to map 
+	keywords to multiple fields, translate values from query units to database units, or
+	add any other specific handling.
 	
 *	QueryMapper automatically keeps a list of Restrictable keywords supported by node,
 	it can be fetched using **public Collection<Restrictable> getRestrictables();** method.
