@@ -4,6 +4,8 @@
 
 ..	[XSAMSJavaDoc] http://dev.vamdc.org/nexus/content/repositories/releases/org/vamdc/xml/
 
+..	[MavenRepo] http://dev.vamdc.org/nexus/content/repositories/releases/
+
 ..	[JavaNodeSoftware] http://www.vamdc.org/software/
 
 ..	[VAMDC-TAP] http://www.vamdc.org/documents/standards/dataAccessProtocol/vamdctap.html#http-header-information
