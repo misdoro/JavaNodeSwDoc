@@ -122,7 +122,8 @@ and set without the XML generator modification.
 	+	XML DOM mapping provided is complete: even if node developer wishes to put the data in
 		a rarely used element of XSAMS, he can do it without the need to output XML blocks as the plain text.
 	
-	-	On a bad side, task of building a document tree results in a bigger amount of node-specific code.
+	-	On a bad side, the task of building a document tree requires an additional amount of node-specific code.
+		Parts of XSAMS-extra library provide helper methods to simplify this task.
 
 	-	Memory consumption is higher due to the need to keep the whole document tree in memory.
 
