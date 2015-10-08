@@ -1,54 +1,77 @@
 .. _plugin:
 
-Database plugin
+Node architecture
 =========================
+
+Java implementation of VAMDC-TAP node software is a web-service application implementing a RESTful interface according to VAMDC-TAP standard specification.
+
+It is accessible using the HTTP protocol, with URLs like *http://node.name.tld/vamdc-tap/12_07/VOSI/capabilities* or 
+*http://node.name.tld/vamdc-tap/12_07/TAP/sync?query=select%20species&lang=VSS2&format=XSAMS*.
+Here *http://node.name.tld/vamdc-tap/12_07/* is the node base url, 
+**/VOSI/capabilities** and **/TAP/sync** are endpoint addresses, and
+*?query=select%20species&lang=VSS2&format=XSAMS* are HTTP request parameters.
+
+For the complete list of endpoint addresses implemented please refer to section :ref:`endpoints`.
+
 
 .. _requestflow:
 
 Request processing
 --------------------
 
-In the course of normal operation, node software receives *HTTP GET* and *HTTP HEAD* requests to the */TAP/sync* 
+In the course of normal operation, node software receives *HTTP GET* and *HTTP HEAD* requests to the **/TAP/sync** 
 endpoint and must respond to them with valid XSAMS documents or only response headers respectively. 
+
+The figure below presents a request flow and what components are involved in the request processing.
 
 .. image:: img/queryProcess.png
 
-The following steps are performed to achieve that, Java VAMDC-TAP implementation (**Framework**)
-is responsible for some of them.
-Node **Plugin** is responsible for the others.
-The Apache Cayenne object-relational mapping framework is used to access the **Database**.
+During the request processing the few steps are performed.
+Java VAMDC-TAP implementation (**Framework**) handles the steps that are common for all VAMDC-TAP nodes.
+Node **Plugin** is responsible for the steps that are essentially node-specific.
+To access the **database**, the Apache Cayenne object-relational mapping framework is used.
 
-*	On the query reception, **framework** asks the **plugin** for the list of supported **keywords**.
+*	On the query reception, the **framework** asks the **plugin** for the list of supported **keywords** (Restrictables).
 
-*	**Framework** is parsing the incoming query, checking it's validity and converting it 
-	into a group of easily accessible :ref:`Query` objects.
+*	The **Framework** parses the incoming query. The validity of the query is checked. 
+	A tree of objects is constructed, representing the logical structure of the query.
+	For more details please refer to the :ref:`Query` section.
 
 *	**Framework** asks **Plugin** to construct the document by calling the :ref:`databasePlug` buildXSAMS() method.
 
-*	**Plugin** maps the incoming query to one or more **Database** queries, 
-	as described in the :ref:`QueryMap`.
+*	**Plugin** maps the incoming query logical tree into one or more **Database** queries, 
+	as described in the :ref:`QueryMap` section.
 	
-*	Before executing or mapping the queries, **Plugin** *should* check 
-	if the user actually requested the certain branch of XSAMS document to be built.
-	See the :ref:`RequestInterface` checkBranch() method for the details.
-	
-*	**Plugin** receives objects from the **Database**, builds **XSAMS** blocks from them and 
-	gives those blocks to the **Framework**. See the :ref:`XSAMSGen` section for the details.
+*	**Plugin** queries the **database** and retreives **Apache Cayenne** data objects.
+	**XSAMS** elements are built from those data objects and are attached to the XSAMS document tree. 
+	See the :ref:`XSAMSGen` section for the details.
 	
 *	When the document tree is built, **Plugin** returns the control to the **Framework**.
 
-*	**Framework** does the final checks on the document tree, calculates accurate metrics for the document.
+*	The **Framework** does the final checks on the document tree and calculates the accurate metrics for the document.
 
-*	**Framework** converts the document tree into XML stream and sends it to the user.
+*	The **Framework** converts the document tree into XML stream and sends it to the client.
 
 
-Interaction between the database plugin and the Java node software is performed through two compact interfaces.
+.. _Interfaces:
+Plugin and Framework Interfaces
+---------------------------------
+
+Interaction between the database plugin and the Java node software is performed through two interfaces:
+
+*	:ref: `DatabasePlug`
+	defined in the **org.vamdc.tapservice.api.DatabasePlug** java interface and implemented by the node developer.
+	Methods of this interface are called by the node software upon the arrival of a VAMDC-TAP request or during the initial startup and operation checks.
+
+*	:ref: `RequestInterface`
+	defined in the **org.vamdc.tapservice.api.RequestInterface** java interface and implemented in the web-service framework.
+	This interface is available to the node plugin to get the request information and feed the XSAMS blocks constructed.
 
 
 .. _DatabasePlug:
 
 DatabasePlugin interface
-------------------------
+++++++++++++++++++++++++++++
 
 Each and every node plugin must implement the **org.vamdc.tapservice.api.DatabasePlug** 
 interface, defining the following methods:
@@ -95,7 +118,7 @@ interface, defining the following methods:
 .. _RequestInterface:
 
 RequestInterface interface
--------------------------------
++++++++++++++++++++++++++++++++
 
 Calls to the node database plugin through :ref:`DatabasePlug` get as a parameter an object
 implementing the **org.vamdc.tapservice.api.RequestInterface**, providing access to the request information and
