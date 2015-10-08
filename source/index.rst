@@ -21,5 +21,6 @@ Java VAMDC-TAP node software documentation
    plugin-metrics
    
    deploy
+   webservice
    
    biblio
