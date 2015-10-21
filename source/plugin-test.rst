@@ -3,39 +3,53 @@
 Database plugin testing
 ===========================
 
-VAMDC-TAP Validator software may be used to test the database plugin operation,
-so there is no need to install the web server and deploy web service framework on the development machine.
-It comes with all the needed libraries bundled, and from the plugin point of view the operation 
-with the VAMDC-TAP Validator is undistinguishable from the real-world operation.
+To test the node plugin, the VAMDC-TAP Validator software may be used.
+It implements the same DatabasePlugin interface call logic and RequestInterface methods operation
+as the VAMDC-TAP node webservice. 
+All the dependency libraries are bundled in a single TAPValidator.jar archive.
 
-To use VAMDC-TAP Validator for the plugin development, simply add the most recent VAMDC-TAP Validator jar file 
-to the library path and create the new run configuration, 
-indicating the **org.vamdc.validator.ValidatorMain** as the main class.
+Such an approach facilitates the node plugin development: there is no need to install the 
+application server and deploy web service framework on the development machine.
 
-During the first run, open the Settings dialog, switch to the plugin mode
-and configure the Plugin class name to contain the fully-qualified name 
-of your class implementing the :ref:`DatabasePlug` interface.
+To use the TAPValidator for the plugin development, few steps are required:
 
-If everything is set up correctly, you should be able to see the list of supported restrictables
-in the right-top text area and be able to do the queries.
+*	The most recent version of TAPValidator.jar should be added to the project library path.
 
-For more information on the VAMDC-TAP Validator user interface and features, consult the [TAPValidator]_ documentation.
+*	New Java Application run/execution configuration should be defined,
+	indicating the **org.vamdc.validator.ValidatorMain** as the main class.
 
-Screenshots
-----------------
+*	TAPValidator should be configured to operate in the plugin development mode.
+	In the Settings window, plugin mode radiobutton should be selected;
+	The class name implementing the :ref:`DatabasePlug` should be indicated,
+	including the java package name.
 
-In case you are using the Eclipse for development, the following screenshots might help.
-Open the project properties of your database plugin.
+If everything is set up correctly, the list of supported restrictables should appear
+in the right-top text area. Plugin **buildXSAMS(...)** method is called every time the *Query* button is pressed.
+
+For more information on the VAMDC-TAP Validator user interface and features, 
+please refer to the [TAPValidator]_ documentation.
+
+
+.. raw:: latex
+
+    \newpage
+
+Eclipse project setup / Screenshots
+--------------------------------------
+
+The screenshots corresponding to the Eclipse project setup are presented below.
+
 
 .. _buildpath:
 
 Adding VAMDC-TAP Validator to the build path
 +++++++++++++++++++++++++++++++++++++++++++++++++
 
+Open the project properties of your database plugin.
 
 .. image:: img/validator/buildpath.png
 
-Add the latest VAMDC-TAP Validator JAR to the build path, clicking on the "Add external JARs" button
+Add the latest VAMDC-TAP Validator JAR to the build path by clicking on the "Add external JARs" button
 
 
 .. _runconfs:
@@ -57,15 +71,18 @@ Creating run configuration
 
 .. image:: img/validator/newrunconf.png
 
-Create the new run configuration with the following Main class path
+Create a new run configuration with the **org.vamdc.validator.ValidatorMain** Main class path
 
+.. raw:: latex
+
+    \newpage
 
 Maven Integration
 --------------------
 
 All Java software developed as a part of VAMDC is available at VAMDC Maven repository
 
-http://dev.vamdc.org/nexus/content/repositories/releases/
+http://nexus.vamdc.org/nexus/content/repositories/releases/
 
 To use Maven for dependency management of your plugin, a following sample POM.xml may be used::
 
@@ -77,19 +94,20 @@ To use Maven for dependency management of your plugin, a following sample POM.xm
 		<groupId>org.vamdc.%databasename%</groupId>
 		<artifactId>plugin</artifactId>
 		<name>databasename plugin for java node software</name>
+		
+		<repositories>
+			<repository>
+				<id>nexus</id>
+				<name>VAMDC Releases</name>
+				<url>http://nexus.vamdc.org/nexus/content/groups/public/</url>
+			</repository>
+		</repositories>
 
 		<parent>
 			<groupId>org.vamdc.tap</groupId>
 			<artifactId>vamdctap-plugin</artifactId>
-			<version>12.07</version>
+			<version>12.07r2</version>
 		</parent>
-
-		<distributionManagement>
-			<repository>
-				<id>releases</id>
-				<url>http://dev.vamdc.org/nexus/content/repositories/releases</url>
-			</repository>
-		</distributionManagement>
 
 		<dependencies>
 			<dependency>
@@ -98,12 +116,14 @@ To use Maven for dependency management of your plugin, a following sample POM.xm
 				<version>0.0.1-SNAPSHOT</version>
 			</dependency>
 			<dependency>
-				<groupId>commons-collections</groupId>
-				<artifactId>commons-collections</artifactId>
-				<version>3.2.1</version>
+				<groupId>org.vamdc</groupId>
+				<artifactId>TAPValidator</artifactId>
+				<version>12.07r2</version>
+				<type>jar</type>
+				<scope>compile</scope>
 			</dependency>
 		</dependencies>
 	</project>
 
-All the required common dependencies are described within *parent* pom, **vamdctap-plugin**
+All the required dependencies are included in the *parent* project, **vamdctap-plugin**
 
