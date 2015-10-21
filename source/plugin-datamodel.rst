@@ -6,7 +6,7 @@ Database Object Model
 Java VAMDC-TAP node software implementation suggests and supports the use of
 Apache Cayenne Object-Relational Mapping (ORM) library.
 
-Apache Cayenne supports various database engines, notably, MySQL, PostgreSQL, SQLite, Oracle, DB2, Microsoft SQL Server.
+Apache Cayenne supports various database engines, such as MySQL, PostgreSQL, SQLite, Oracle, DB2, Microsoft SQL Server.
 
 Creation of database objects is made simple thanks to the graphical modeler application,
 provided as a part of Cayenne.
@@ -21,6 +21,8 @@ Step-by-step guide
 Here is a small illustrated guide on creating database mappings.
 We will need Cayenne modeler application, it can be downloaded from 
 http://cayenne.apache.org/download.html as a part of binary distribution.
+
+Version 3.1 is recommended for use with the 12.07r2 version of the Java VAMDC-TAP Node Software.
 
 
 Create maven project
@@ -45,20 +47,20 @@ Maven pom.xml can be replaced with the following contents::
 		<modelVersion>4.0.0</modelVersion>
 		<groupId>org.vamdc.databaseName</groupId>
 		<artifactId>node_dao</artifactId>
-		<version>12.07</version>
+		<version>12.07r2</version>
 		<name>databaseName database objects</name>
 
 		<parent>
 			<groupId>org.vamdc.tap</groupId>
 			<artifactId>cayenne_dao</artifactId>
-			<version>12.07</version>
+			<version>12.07r2</version>
 		</parent>
 		
 		<repositories>
 			<repository>
 				<id>vamdc repository</id>
 				<name>VAMDC stuff for Maven</name>
-				<url>http://dev.vamdc.org/nexus/content/repositories/releases</url>
+				<url>http://nexus.vamdc.org/nexus/content/repositories/releases</url>
 				<layout>default</layout>
 			</repository>
 		</repositories>
@@ -67,11 +69,11 @@ Maven pom.xml can be replaced with the following contents::
 Create Cayenne classes
 +++++++++++++++++++++++
 
-Let's open cayenne modeler application and create a new project:
+Let's open the cayenne modeler application and create a new project:
 
 .. image:: img/cayenne/1.png
 
-Now we need a dataNode describing database connection
+Now we need a dataNode describing the database connection
 
 .. image:: img/cayenne/2.png
 
@@ -87,11 +89,10 @@ After the DataMap is created, we need to import the database schema:
 
 .. image:: img/cayenne/6.png
 
-**!Note** the "Meaningful PK" flag is set for the sake of the generated classes to have
-getters for the table primary key field.
+**!Note** the "Meaningful PK" flag is set to preserve the getter methods for the primary key fields.
 
-As a result for each database table a separate Java class is generated, containing attribute fields and relationship
-references.
+As a result a separate Java class is generated for each database table table, 
+containing attribute fields and relationship references.
 
 .. image:: img/cayenne/7.png
 
@@ -117,37 +118,86 @@ Cayenne project itself needs to be saved next to it, in src/main/resources.
 Notable Cayenne features used
 -------------------------------
 
-The goal of using ORM framework is not only to get object-oriented view of database, but rather to 
-simplify and automate query translation.
+The use of an ORM framework provides several benefits:
+
+*	Object-oriented view of the database;
+
+*	Automatic relations traversal using the object methods 
+	(explained below);
+
+*	Simplified translation of the incoming queries (see :ref:`QueryHandling`)
+
 
 Relations traversing
 ++++++++++++++++++++++
 
-If properly defined, database model contains information about all tables relations through the foreign keys.
+If properly defined, database model contains information about all table relations by means of the foreign keys.
 While constructing the query, those relations can be automatically traversed to form the correct query with desired
 selection criterias. 
 
-For example, we have a table **'artists'** with fields **'id'** and **'name'**
-and a table **'albums'** with fields **'id'**, **'artistId'**, **'name'** and **'year'**
+As an example, let us have a look at the case of two tables, **'artists'** and **'albums'**, with a one-to-one mapping of albums to artists
+using the foreign key **'albumArtist'** pointing to the **'id'** field of the **'artists'** table.
+
+=== =================
+ artists
+---------------------
+id   name
+=== =================
+1    Elton John
+2    Michael Jackson
+3    Joe Cocker
+=== =================
+
+and
+
+=== ========== =========================== ======
+albums
+-------------------------------------------------
+id   artistId   name                        year
+=== ========== =========================== ======
+1    1          The Big Picture             1997
+2    1          Goodbye Yellow Brick Road   1973
+3    2          Off the Wall                1979
+4    2          Invincible                  2001
+5    3          Across from Midnight        1997
+6    3          Respect Yourself            2002
+=== ========== =========================== ======
+
 For the table **'albums'** we have one-to-one relation with the **'artists'** table, called **'albumArtist'**
 and for artists the reverse one-to-many relationship **'artistAlbums'**
 
-So, if we want to get all artists that released albums in 1980, we would create an **Expression** containing the path
+So, if we want to get all artists that released albums in 1997, we would create an **Expression** containing the path
 from the **'artists'** table to the **'year'** field of **'albums'** table and the expression type **'match'**
 
 ::
 
-	Expression exp = ExpressionFactory.matchExp("artistAlbums.year", 1980);
+	Expression exp = ExpressionFactory.matchExp("artistAlbums.year", 1997);
 	SelectQuery query = new SelectQuery(Artists.class,exp);
 	List<Artists> artists = context.performQuery(query);
 
 To add another constraint on a query, we may redefine the Expression::
 
-	exp = exp.andExp(ExpressionFactory.likeExp("name", "Thomas%"));
-	
-Here we are not traversing the relationship, but using the table field as a constraint directly.
+	exp = exp.andExp(ExpressionFactory.likeExp("name", "%Cocker%"));
 
-Normally, none of the expressions would require 'manual' construction, 
+Once we received the artists list, we may get the name of each artist, or have a look at all his albums::
+
+	for (Artists artist:artists){
+	  System.out.println("name: "+artist.Name+":");
+	  for (Albums album:artist.getArtistAlbums()){
+	    System.out.println("    Album: "+album.Name+"("+album.Year+")");
+	  }
+	}
+
+This code should print something like::
+
+	Elton John:
+	    Album: The Big Picture(1997)
+	    Album: Goodbye Yellow Brick Road(1973)
+	Joe Cocker:
+	    Album: Across from Midnight(1997)
+	    Album: Respect Yourself(2002)
+
+For the case of VAMDC node plugin, none of the expressions would require 'manual' construction: 
 they will be translated from the incoming queries. Query translation is described in a separate chapter :ref:`queryMap`
 
 
@@ -156,7 +206,7 @@ Path aliases
 
 Imagine that we have the scenario of many-to-many relation through a separate table.
 For the previous example, let's add a table **'artistAlbums'** with three columns, **'id'**, **'artistId'** and **'albumId'**
-Table **'albums'** doesn't any more contain the 'artistID' column, but both forward and reverse relations are still 
+Table **'albums'** does not contain the 'artistID' column any more, but both forward and reverse relations are still 
 called **'albumArtists'** and **'artistAlbums'**
 
 If we need to select artists that released albums both in 1980 and 1990,
@@ -177,6 +227,4 @@ For such a case, Cayenne provides aliases mechanism::
 That last command tells the select query how to interpret the alias. 
 Because the aliases are different, the SQL generated will have two completely separate set of joins.
 This is called a "split path".
-
-
 
