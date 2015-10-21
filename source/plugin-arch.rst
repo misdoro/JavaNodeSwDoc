@@ -19,10 +19,10 @@ For the complete list of endpoint addresses implemented please refer to section 
 Request processing
 --------------------
 
-In the course of normal operation, node software receives *HTTP GET* and *HTTP HEAD* requests to the **/TAP/sync** 
-endpoint and must respond to them with valid XSAMS documents or only response headers respectively. 
+During normal operation, node software receives *HTTP GET* and *HTTP HEAD* requests to the **/TAP/sync** 
+endpoint. As a response to a request a valid XSAMS document and/or the HTTP response headers are sent. 
 
-The figure below presents a request flow and what components are involved in the request processing.
+The figure below presents the request flow, *highlighting* the components involved in the request processing.
 
 .. image:: img/queryProcess.png
 
@@ -37,7 +37,9 @@ To access the **database**, the Apache Cayenne object-relational mapping framewo
 	A tree of objects is constructed, representing the logical structure of the query.
 	For more details please refer to the :ref:`Query` section.
 
-*	**Framework** asks **Plugin** to construct the document by calling the :ref:`databasePlug` buildXSAMS() method.
+*	**Framework** asks **Plugin** to construct the document by calling the :ref:`databasePlug` 
+    buildXSAMS(RequestInterface incomingRequest) method. All the query information is accessible via the 
+    RequestInterface object passed as a parameter.
 
 *	**Plugin** maps the incoming query logical tree into one or more **Database** queries, 
 	as described in the :ref:`QueryMap` section.
@@ -60,7 +62,7 @@ Plugin and Framework Interfaces
 Interaction between the database plugin and the Java node software is performed through two interfaces:
 
 *	:ref: `DatabasePlug`
-	defined in the **org.vamdc.tapservice.api.DatabasePlug** java interface and implemented by the node developer.
+	defined in the **org.vamdc.tapservice.api.DatabasePlugin** java interface and implemented by the node developer.
 	Methods of this interface are called by the node software upon the arrival of a VAMDC-TAP request or during the initial startup and operation checks.
 
 *	:ref: `RequestInterface`
@@ -73,34 +75,32 @@ Interaction between the database plugin and the Java node software is performed 
 DatabasePlugin interface
 ++++++++++++++++++++++++++++
 
-Each and every node plugin must implement the **org.vamdc.tapservice.api.DatabasePlug** 
+Each and every node plugin must implement the **org.vamdc.tapservice.api.DatabasePlugin** 
 interface, defining the following methods:
 
 *	**public abstract Collection<Restrictable> getRestrictables();**
 	
-	get restrictables supported by this node.
-	Must return a collection of **org.vamdc.dictionary.Restrictable** dictionary elements.
+	Must return a collection of **org.vamdc.dictionary.Restrictable** dictionary keys that are supported by the node.
 	This method is called once per each request to the */TAP/sync* and */VOSI/capabilities* endpoints.
 	
 *	**public abstract void buildXSAMS (RequestInterface userRequest);**
 	
-	Build XSAMS document tree from the user request. 
+	Build the XSAMS document tree corresponding to the incoming request. 
 	Object implementing :ref:`RequestInterface`
 	is passed as a parameter. No return is expected.
 	This method is called every time the node software is receiving an *HTTP GET* request to the */TAP/sync?* endpoint.
 	
-	**WARNING!** Node plugin object is instantiated only once when the node is started,
+	**WARNING!** Node plugin class is instantiated only once when the node is started,
 	all calls to buildXSAMS should be thread-safe to handle concurrent requests correctly.
 	
 	Implementation details are covered in the :ref:`XSAMSGen` section.
 	
 *	**public abstract Map<Dictionary.HeaderMetrics,Integer> getMetrics(RequestInterface userRequest);**
 	
-	Get query metrics. This method is called every time 
-	the node receives the HEAD request to the */TAP/sync?* endpoint.
+	Get the metrics corresponding to a query. This method is called for every incoming HEAD request to the */TAP/sync?* endpoint.
 	*RequestInterface userRequest* parameter is identical to the one passed to buildXSAMS method.
 	This method should return a map of VAMDC-COUNT-* HTTP header names and their estimate values.
-	For the header names and meaning, see [VAMDC-TAP]_ documentation
+	For header names and meaning, see the [VAMDC-TAP]_ documentation section DataAccessProtocol.
 	
 	
 *	**public abstract boolean isAvailable();**
@@ -120,27 +120,28 @@ interface, defining the following methods:
 RequestInterface interface
 +++++++++++++++++++++++++++++++
 
-Calls to the node database plugin through :ref:`DatabasePlug` get as a parameter an object
-implementing the **org.vamdc.tapservice.api.RequestInterface**, providing access to the request information and
-node software facilities.
+When the incoming request arrives to Java Node Software, methods of the :ref:`DatabasePlug` are called, 
+as described earlier. Methods of that interface accept as a parameter an object
+implementing the **org.vamdc.tapservice.api.RequestInterface**. That interface provides the access 
+to the request information and the Java Node Software facilities.
 
-Following methods are part of that interface:
+Following methods are part of this interface:
 
 *	**public abstract boolean isValid();**
 	this method returns **true** if the incoming request is valid and should be processed.
-	
-	In case of the **false** return, node plugin should not do any processing. Query string may be saved for logging
-	purposes.
+	If the returned value is **false**, the request should be considered as invalid, no processing is required.
+    Query string may be obtained by calling the getQueryString method and saved by the node plugin for the logging purposes.
 
 *	**public abstract Query getQuery();**
-	This method returns the base object of the QueryParser library. Query interface is described
-	in the :ref:`query` section of this document. A few shortcut methods are provided.
+	This method returns the base object of the QueryParser library, implementing the Query interface. 
+    That interface is described in detail in the :ref:`query` section of this document. 
+
+*	**public abstract LogicNode getQueryTree();**
+    This is the shortcut method returning the root element of the logic tree corresponding to the incoming query.
 	
-*	**public abstract LogicNode getRestrictsTree();**
-	The shortcut method to get the logic tree of the incoming query.
-	
-*	**public abstract Collection<RestrictExpression> getRestricts();**
-	The shortcut method to get all the keywords of the query, omitting the keywords relation logic.
+*	**public abstract Collection<RestrictExpression> getQueryKeywords();**
+	This is an another shortcut method, allowing to get a collection of the keywords used in the incoming query.
+	The keywords relation logic is omitted.
 	
 	**WARNING!** This method should not be used as the main source of data for the query mapping since
 	it completely looses the query relation logic. Imagine the query::
@@ -169,22 +170,19 @@ Following methods are part of that interface:
 	the section **Requestables**
 	
 *	**public abstract ObjectContext getCayenneContext();**
-	Get Apache Cayenne object context. That is the main endpoint of the Cayenne ORM library.
+	Returns the Apache Cayenne object context. That is the main endpoint of the Cayenne ORM library.
 	For more information on using the Apache Cayenne look in the sections :ref:`datamodel` and :ref:`QueryMap`.
 
 	
 *	**public abstract XSAMSManager getXsamsManager();**
-	Get XSAMS tree manager, containing several helper methods.
-	All XSAMS branches built by the node plugin should be attached to it.
-	 
-*	**public abstract Logger getLogger(Class<?> classname);**
-	
-	Get the **org.slf4j.Logger** object. All messages/errors reporting should be done with it.
-	
+	Get an instance of the XSAMS document manager. This manager contains several helper methods for building the XSAMS document.
+	All XSAMS branches built by the node plugin should be attached to it. Check the :ref:`XSAMSGen` section for more details.
+
 *	**public abstract void setLastModified(Date date);**
 	
-	Set the last-modified header of the response. May be called anywhere during request processing 
-	for any number of times. If called more than once, the last modification date is updated only if
-	the subsequent date is newer than communicated before.
+	Sets the last-modified header of the response. 
+	This method may be called several times during the request processing.
+	If called more than once, the last modification date is updated only if
+	the subsequent date is newer than the value communicated before.
 
 
