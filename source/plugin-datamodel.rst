@@ -205,26 +205,56 @@ Path aliases
 +++++++++++++++
 
 Imagine that we have the scenario of many-to-many relation through a separate table.
-For the previous example, let's add a table **'artistAlbums'** with three columns, **'id'**, **'artistId'** and **'albumId'**
+For the previous example, let's add a table **'albumartist'** with three columns, **'id'**, **'artistId'** and **'albumId'**
 Table **'albums'** does not contain the 'artistID' column any more, but both forward and reverse relations are still 
 called **'albumArtists'** and **'artistAlbums'**
 
-If we need to select artists that released albums both in 1980 and 1990,
-joining expressions neither with exp.andExp nor exp.orExp would give us appropriate queries.
+Let us imagine that we need to select the artists that released their albums both in 1973 and 1997.
 
-exp.andExp() would return no results,
+Joining expressions neither with exp.andExp nor exp.orExp would give us appropriate queries.
 
-exp.orExp() would return all artists that released albums either in 1980 or 1990.
+**exp.andExp()** would produce a query::
 
-For such a case, Cayenne provides aliases mechanism::
+  SELECT DISTINCT t0.name, t0.id 
+    FROM artist t0 
+    JOIN albumartist t1 ON (t0.id = t1.idArtist) 
+    JOIN album t2 ON (t1.idAlbum = t2.id) 
+    WHERE (t2.year = 1973) AND (t2.year = 1997)
 
-	Expression e1 = ExpressionFactory.match("artistAlbumsAlias1.year", 1980);
-	Expression e2 = ExpressionFactory.match("artistAlbumsAlias2.year", 1990);
+that obviously never returns the data since the WHERE sub-conditions are mutually exclusive.
+
+**exp.orExp()** would produce a query::
+
+  SELECT DISTINCT t0.name, t0.id 
+    FROM artist t0 
+    JOIN albumartist t1 ON (t0.id = t1.idArtist) 
+    JOIN album t2 ON (t1.idAlbum = t2.id) 
+    WHERE (t2.year = 1973) OR (t2.year = 1997)
+
+that returns all the artists that released albums either in 1973 or 1997.
+
+To resolve the problem, Apache Cayenne provides the aliases mechanism::
+
+	Expression e1 = ExpressionFactory.match("artistAlbumsAlias1.year", 1997);
+	Expression e2 = ExpressionFactory.match("artistAlbumsAlias2.year", 1973);
 	Expression e = e1.andExp(e2);
-	q = new SelectQuery(Artists.class, e);
+	SelectQuery q = new SelectQuery(Artists.class, e);
 	q.aliasPathSplits("artistAlbums", "artistAlbumsAlias1", "artistAlbumsAlias2");
 	
 That last command tells the select query how to interpret the alias. 
-Because the aliases are different, the SQL generated will have two completely separate set of joins.
-This is called a "split path".
+Because the aliases are different, the SQL generated will have two completely separate set of joins::
+
+  SELECT DISTINCT t0.name, t0.id 
+    FROM artist t0 
+    JOIN albumartist t1 ON (t0.id = t1.idArtist) 
+    JOIN album t2 ON (t1.idAlbum = t2.id) 
+    JOIN albumartist t3 ON (t0.id = t3.idArtist) 
+    JOIN album t4 ON (t3.idAlbum = t4.id) 
+    WHERE (t2.year = 1997) AND (t4.year = 1973)
+
+This is called "split path" in the Apache Cayenne terms.
+
+If applied to the case of VAMDC databases, 
+this approach may be used for handling the cases where the data is linked
+through a separate join table, such as articles by author or year, or reactants in chemical reaction databases.
 
