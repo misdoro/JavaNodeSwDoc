@@ -5,14 +5,16 @@ XSAMS tree building
 
 XSAMS is an XML schema, adopted within VAMDC for data exchange.
 
-Java node software implementation uses JAXB library for mapping between objects and XML elements.
+Java node software implementation uses JAXB library to establish 
+the mapping between Java objects and XML elements and to read/write XSAMS documents
 
-Contrary to the Python/Django node software, Java version doesn't provide limited keyword-based XML generator.
-
-Each node plugin is responsible by itself for building object trees corresponding to the document branches and
+Each node plugin is responsible for building object trees corresponding to the XSAMS document branches and
 for attaching them to the main tree, managed by the node software.
-Node software than outputs the built tree as XML XSAMS document.
+Once the node plugin has finished building the XSAMS document and returned from the buildXSAMS() method, 
+the node software outputs the XML document to the client.
 
+Java objects corresponding to every element of XSAMS schema 
+are generated using JAXB library and are a part of *org.vamdc.xsams* package, included in **xsams** and **xsams-extra** libraries.
 
 XSAMS objects can be constructed by extension of Jaxb mapping classes with convenience methods,
 provided within **xsams-extra** library.
@@ -26,9 +28,6 @@ Example constructor class
 As an example let's look at the BASECOL Source element constructor::
 
 	package org.vamdc.basecol.xsams;
-
-	import java.util.ArrayList;
-	import java.util.List;
 
 	import org.vamdc.basecol.dao.RefsArticles;
 	import org.vamdc.basecol.dao.RefsGroups;
@@ -69,19 +68,18 @@ As an example let's look at the BASECOL Source element constructor::
 			};
 
 		}
-		//...
 	}
 
 The full source is available in **org.vamdc.basecol.xsams.Source** class.
 
-Here, RefsArticles is a BASECOL Cayenne mapping object identifying one source record, 
+Here, RefsArticles is the BASECOL Cayenne mapping object identifying one source record in the database, 
 and SourceType is a root element of XSAMS Sources branch. 
 SourceType is defined by the class **org.vamdc.xsams.schema.SourceType**.
 
 Collection of RefsArticles objects is retrieved automatically through the Cayenne model relation.
-For each reference element we need to check if it is already attached to the XSAMS Document tree.
-If not, then the mentioned above builder is called, and finally,
-after the SourceType object is built, it needs to be attached to the document tree::
+For each *Source* element we need to check if it is already attached to the XSAMS Document tree.
+If no existent object is found, 
+the aforementioned builder is called and the generated object is attached to the document tree.::
 
 
 	public static List<SourceType> getSources(
@@ -89,22 +87,20 @@ after the SourceType object is built, it needs to be attached to the document tr
 			XSAMSManager document, 
 			boolean filterSource) {
 			
-		//Here sources will be added
 		ArrayList<SourceType> result = new ArrayList<SourceType>();
 
-		/*always add database self-reference*/
+		/*always add the database self-reference*/
 		result.add(document.getSource(IDs.getSourceID(0)));
 
-		if (referenceRel==null)
-			return result;
+		if (referenceRel==null)	return result;
 
 		/*Add all sources that are stated as 'isSource'*/
 		for (RefsGroups myref:referenceRel){
 			RefsArticles article = myref.getArticleRel();
 			if (article!=null && (myref.getIsSource() || !filterSource)){
-				//Check if source with this ID was already referenced:
+				//Check if the source with this ID is already referenced:
 				SourceType source = document.getSource(
-						IDs.getSourceID(article.getArticleID().intValue())); 
+					IDs.getSourceID(article.getArticleID().intValue())); 
 				if (source == null){//If not, create and add it:
 					source = new Source(article);
 					document.addSource(source);
@@ -117,55 +113,65 @@ after the SourceType object is built, it needs to be attached to the document tr
 	}
 
 
-Later this list should be added to the element requiring source reference,
-for example, we create a new DataType value and have references attached to it::
+This list of the SourceType objects should be passed as the argument to the
+objects requiring the bibliographic references. 
+For example, if a new DataType object is created, references may be attached to it in the following manner::
 
 	DataType quantity = new DataType(table.value, table.units);
 	quantity.addSources(Source.getSources(table.sourceRelation,request,true));
 	
-Here, "table" is an object of your database model, providing value and units fields plus the relation to the sources.
-First, we need to create a quantity of the DataType, then we construct all related source elements, 
-automatically adding them to the XSAMS document tree if necessary, and attach to the quantity element.
+Here, "table" is an object of the database model, providing value and units fields plus the relation to the sources.
 
 	
-Attaching objects to XSAMS Document tree
-------------------------------------------
+Attaching objects to the XSAMS Document tree
+---------------------------------------------
 
-**RequestInterface** provides access to XSAMS Document tree through **XSAMSManager** interface, implementation of
-which can be obtained by calling **getXsamsManager()** method of the request.
+The interface **RequestInterface** provides the access 
+to the XSAMS Document tree through the **XSAMSManager** interface.
+Node plugin may obtain the XSAMSManager by calling the **getXsamsManager()** method of the **RequestInterface**.
 
 **org.vamdc.xsams.XSAMSManager** interface provides a handful of methods to add different branches to the XSAMS tree,
 getting them by known ID or iterating through all of them. For a full list of methods,
 consult the JavaDoc of the JAXB XSAMS library [XSAMSJavaDoc]_.
 
-Notable are:
+Most commonly used methods are:
 
-*	public String addSource(SourceType source);
+*	String addSource(SourceType source);
+	  returning the source identifier
 
-*	public String addElement(SpeciesInterface species);
+*	String addElement(SpeciesInterface species);
+	  returning the species identifier
 
-*	public int addStates(String speciesID,Collection<? extends StateInterface> states);
+*	int addStates(String speciesID,Collection<? extends StateInterface> states);
+	  returning the number of added atomic or molecular states
 
-*	public boolean addProcess(Object process);
+*	boolean addProcess(Object process);
+	  returning true if the process element was attached to the tree
 
-for adding correspondingly sources, species, states and processes.
+for adding the sources, species, states and processes respectfully.
 
+For each XSAMS block that has an identifier, a convenience method is implemented
+allowing to fetch the root element of the block by its string identifier.
+For example, for the sources block there exists a method **SourceType getSource(String sourceID)**.
+
+A complete list of methods is available in the JavaDoc of the XSAMSManager interface [XSAMSJavaDoc]_.
 
 
 Identifiers generation
 -------------------------
 
-Each major block of XSAMS has it's own unique identifier,
-which is a string starting with a block-specific character.
+Each major block of an XSAMS document has an unique identifier,
+an arbitrary alphanumeric string starting with a block-specific symbol.
 
-To assure VAMDC-wide uniquiness of those identifiers, permitting merging of documents,
-NodeSoftware (both Python and Java implementations) have a mechanism for adding node-specific prefix.
+To assure VAMDC-wide uniquiness of those identifiers, a node-specific prefix is inserted into every identifier string.
+For instance, that allows to merge the documents coming from the different databases.
 
-For Java node software it is a special class, **org.vamdc.xsams.IDs**, providing several constants and methods.
+In Java node software the identifiers are managed by a special class, **org.vamdc.xsams.IDs**. 
+That class provides several static constants and methods:
 
-*	public static String getID(char prefix, String suffix) 
-		Most generic method, allowing to generate an arbitrary ID.
-		All allowed prefix values are enumerated as *public final static char* constants:
+*	String getID(char prefix, String suffix) 
+		Most generic method, allowing to generate an arbitrary identifier.
+		The allowed prefix values are enumerated as *public final static char* constants:
 		
 		-	IDs.SOURCE
 		-	IDs.ENVIRONMENT
@@ -176,14 +182,22 @@ For Java node software it is a special class, **org.vamdc.xsams.IDs**, providing
 		-	IDs.MODE
 		-	IDs.PROCESS
 
-*	public static String getSourceID(int idSource)
-*	public static String getEnvID(int idEnv)
-*	public static String getFunctionID(int idFunction)
-*	public static String getMethodID(int idMethod)
-*	public static String getStateID(int EnergyTable, int Level)
-*	public static String getModeID(int molecule, int mode)
-*	public static String getSpecieID(int idSpecies)
-*	public static String getProcessID(char group, int idProcess)
+*	String getSourceID(int idSource) 
+		;
+*	String getEnvID(int idEnv) 
+		for the environment identifiers
+*	String getFunctionID(int idFunction)
+		;
+*	String getMethodID(int idMethod)
+		;
+*	String getStateID(int EnergyTable, int Level)
+		;
+*	String getModeID(int molecule, int mode)
+		;
+*	String getSpecieID(int idSpecies)
+		;
+*	String getProcessID(char group, int idProcess)
+		;
 
 All those ID generation methods automatically add the configured node-specific ID prefix.
 
@@ -191,8 +205,8 @@ All those ID generation methods automatically add the configured node-specific I
 XSAMS JAXB convenience extensions
 -------------------------------------
 
-For convenience, all XSAMS object classes were extended and grouped into packages
-by the schema block they are appearing in:
+For convenience, all the XSAMS object classes were extended and grouped 
+by the schema block into different packages :
 
 
 * org.vamdc.xsams.common
@@ -268,36 +282,34 @@ Few value constructors were added:
 		public ChemicalElementType(int charge, String symbol);
 	
 	Used in Atoms and Solids branches, ChemicalElementType has a convenience constructor consuming
-	the atom nuclear charge and it's chemical element symbol.
+	the atom nuclear charge and its chemical element symbol.
 
-So far, this is the full list of all convenience constructors created for the XSAMS library.
-If you need more convenience constructors or methods to be added, 
-contact the Java node software authors and those methods would be included in the next software release.
 
 
 Case-By-Case generic builders
 --------------------------------
 
 Molecular state quantum numbers in XSAMS are represented as additional XML sub-schemas,
-defining an element QNs with ordered child quantum number elements.
-Each case has it's own separate namespace, that means that Java JAXB mapping 
+defining an element QNs with the ordered child quantum number elements.
+Each case has its own separate namespace, that means that Java JAXB mapping 
 of each case would be in a separate package and the user would either require a generic builder using
 Java Reflection or have a builder for each case.
 
 Since all cases are just combinations of roughly 30 quantum numbers,
-the decision was taken to create an intermediate structure able to keep all of them plus
-the case identifier. The class name is **org.vamdc.xsams.util.StateCore**.
-It is able to contain a collection of quantum numbers and other important state-related information.
+it was chosen to create an intermediate structure to contain them, together with the case identifier. 
+The class name is **org.vamdc.xsams.util.StateCore**.
+It holds a collection of quantum numbers and other important state-related information.
 
 Each quantum number is represented by the **org.vamdc.xsams.util.QuantumNumber** object.
-It contains the value, optional label and mode index plus the mandatory quantum number type, 
-defining the place where in the case-by-case representation the value will go.
+That object contains the value, optional label and mode index, plus the mandatory quantum number type.
 
-Each autogenerated case package is complemented with it's own builder.
-The general case builder **org.vamdc.xsams.cases.CaseBuilder** accepts **StateCore** as a single parameter and
-is calling case builders based on the integer case ID, returning the built tree.
-Case ID is the same as it is defined in the case-by-case documentation.
-The following code illustrates the use::
+Each case package is complemented with its own builder.
+The general case builder **org.vamdc.xsams.cases.CaseBuilder** accepts the **StateCore** object 
+as a single parameter.
+Depending on the caseID parameter value, a specific case builder is called, returning the built tree.
+The identifier Case ID is the same as defined in the case-by-case documentation.
+
+The following code illustrates the use of the **CaseBuilder**::
 
 	StateCore statedata = new BasecolStateCore(myetable, level);
 	MolecularStateType molecularState = new MolecularStateType();
@@ -305,13 +317,14 @@ The following code illustrates the use::
 	if (myrequest.checkBranch(Requestable.MoleculeQuantumNumbers))
 		molecularState.getCases().add(CaseBuilder.buidCase(statedata));
 			
-Here, BasecolStateCore is a custom class that extends StateCore to automatically
-fill in all the fields from the Basecol Cayenne model.
+Here, **BasecolStateCore** is a custom class that extends **StateCore**, providing a custom constructor
+to fill the fields from the Basecol Cayenne objects.
 
 MolecularStateType is the autogenerated XSAMS JAXB mapping class 
 that should be fed direcly to the XSAMS library by calling the::
 	
 	RequestInterface.getXsamsroot().addState(speciesID, molecularState);
 
-Obviously, the element corresponding to the speciesID should already be there.
+Please note that the element corresponding to the given speciesID should be attached to the XSAMS tree 
+before attaching the state.
 
