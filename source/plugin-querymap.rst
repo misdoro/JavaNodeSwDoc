@@ -1,30 +1,36 @@
 .. _QueryHandling:
 
-VSS query recognition and mapping
+VSS query parsing and mapping
 =====================================
 
-Obviously, each node has it's own database structure.
-In order to fetch data requested by the NodeSoftware client,
-incoming query needs to be mapped into one or multiple queries to the node database.
+Vamdc nodes are queried using a common SQL-like keyword-based query language.
+A typical query looks like::
+  
+  SELECT * WHERE (keyword1=value or keyword2=value2) and keyword3='value3'
+
+where the keywords correspond to the different parts of the XSAMS document
+and are defined in the VAMDC Dictionary [VAMDCDict]_ as Restrictable keywords.
+Since every VAMDC node has a specific database structure, 
+the incoming query keywords need to be mapped to 
+the database fields in order to fetch the data corresponding to the query.
 Java Node software tries to make the process of query mapping as simple and sophisticated as possible.
 
 
 Query keywords tree
 -----------------------
 
-First, as Java node software receives a query, it validates it and parses into a tree of objects.
-Intermediate nodes of that tree are representing boolean relations and leafs keep the information about
-the query keywords, comparison operator and values.
-
-For example, query::
+As a first step, on query reception the Java Node Software parses the query into a tree of objects
+using the **vamdctap-queryparser** library.
+Leaf nodes of that tree of objects represent the individual keyword expressions.
+The root node and the branches are reflecting the boolean relations between the leaves.
+For instance, a query::
 
 	SELECT * WHERE reactant1.AtomSymbol = 'C' AND reactant2.AtomSymbol = 'O' 
 	AND (CollisionCode='inel' or CollisionCode='elas')
 	
-would map into a tree
+would map into the tree
 
 .. image:: img/queryTree.png
-
 
 
 Tree objects
