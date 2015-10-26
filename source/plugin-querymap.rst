@@ -33,44 +33,90 @@ would map into the tree
 .. image:: img/queryTree.png
 
 
-Tree objects
----------------------
+QueryParser library interface
+-----------------------------
 
-Following objects are representing the incoming query tree
-
+The QueryParser libary provides an interface *org.vamdc.tapservice.vss2.* **Query**
+providing several methods to access the incoming query elements.
 
 .. _query:
 
 Query
 ++++++++++++
 
-Main interface of the query parser library,
-provides access to the query tree and few utility methods.
+The methods to access the incoming query elements are:
+
 
 *	**public LogicNode getRestrictsTree()**
 	is the main method, returning the root of the query tree.
 
-	Accompanying are two methods, **getFilteredTree** and **getPrefixedTree**, returning subsets of tree.
+	Accompanying are two methods, **getFilteredTree** and **getPrefixedTree**, returning the subsets.
 
 *	**public LogicNode getFilteredTree(Collection<Restrictable> allowedKeywords)**
-	returns a subtree containing only keywords listed in collection passed as a parameter.
+	returns a subtree containing only the keywords present in the collection 
+	that is passed as a parameter.
 
 *	**public LogicNode getPrefixedTree(VSSPrefix prefix, int index)**
-	returns a subtree containing only keywords having the defined prefix and index.
-	If *null* is passed as a prefix, returned tree would only contain nodes without any prefix.
+	returns a subtree containing only the keywords having the prefix and index that are passed to the method.
+	If *null* is passed as a prefix, returned tree would only contain nodes that have a *null* prefix.
 	
 *	**public Collection<Prefix> getPrefixes()**
-	returns a collection of prefixes present in the query
+	returns a collection of prefixes that are present in the query
 
 *	**public List<RestrictExpression> getRestrictsList()**
-	is the most dummy method, returning a list of all keywords specified in the query.
-	Using that list as a main source for query mapping is discourages since it leads to the loss of logic.
-	
+	returns a list of all the keywords that are present in the query.
+	The logic of relations between the elements is lost.
 
-In **getFilteredTree()** and **getPrefixedTree()** the filtering algorithm removes the irrelevant RestrictExpression
-objects from LogicNodes, then removes logicNodes that has no children.
+LogicNode
++++++++++++++++++
 
-For example, in case of filtering by the prefix:
+The *LogicNode* interface represents a node of the query tree.
+**getOperator()** method provides access to the node operator (**OR**, **AND**, **NOT**),
+**getValues()** returns a collection of child nodes.
+
+For the single-value operators like **NOT**, the **getValue()** method may be used to obtain
+the child element directly.
+
+
+RestrictExpression
++++++++++++++++++++++
+
+The leaf nodes of the logic tree are implementing the RestrictExpression interface, 
+representing the query expressions.
+
+The *RestrictExpression* interface is the extension of the *LogicNode* interface
+providing the **getOperator()**, **getValues()** and **getValue()** methods, 
+as well as few additional methods:
+
+*	**public Prefix getPrefix()** a method returning the prefix used in the expression.
+
+*	**public Restrictable getColumn()** a method returning the Restrictable keyword 
+	used by the expression.
+
+
+Prefix
++++++++++++++
+
+Prefix is a simple class, keeping the **VSSPrefix** keyword of the dictionary, 
+plus an integer index of the prefix.
+
+*	**int getIndex()** method provides access to the index, and
+
+*	**VSSPrefix getPrefix()** gives access to the prefix name.
+
+.. raw:: latex
+
+    \newpage
+
+Filtering logic
+----------------
+
+The algorithm implemented for the **getFilteredTree()** and **getPrefixedTree()** methods of the
+:ref:`query` interface works the following way:
+It removes the irrelevant RestrictExpression objects from LogicNodes,
+than removes the Nodes of the tree that have no child expression elements.
+
+For example, in the case of filtering by the prefix:
 
 *	Original query::
 
@@ -89,45 +135,10 @@ For example, in case of filtering by the prefix:
 
 		select ALL where EnvironmentTemperature > 100
 	
-*	Effective query for getFilteredTree() with a collection containing only AtomSymbol::
+*	Effective query for getFilteredTree(Collection<Restrictable>{AtomSymbol}) with a collection containing only the AtomSymbol element::
 
 		select ALL where reactant1.AtomSymbol='C' and reactant2.AtomSymbol='H'
 
-
-LogicNode
-+++++++++++++++++
-
-LogicNode interface represents a node of the query tree.
-**getOperator()** method provides access to the node operator,
-**getValues()** returns a collection of child nodes.
-
-For certain operators like **NOT**, **getValue()** method also makes sense, returning a single
-child element.
-
-
-RestrictExpression
-+++++++++++++++++++++
-
-RestrictExpression elements are the leafs of the logic tree, representing the actual query restriction keywords.
-
-Same as the LogicNode, RestrictExpression provides **getOperator()**, **getValues()** and **getValue()** methods,
-plus
-
-*	**public Prefix getPrefix()** method, returning this expression prefix
-
-*	**public Restrictable getColumn()** method, returning a restriction keyword from the dictionary
-	for this expression
-
-
-Prefix
-+++++++++++++
-
-Prefix is a simple class, keeping **VSSPrefix** from the dictionary
-and integer index of the prefix.
-
-*	**int getIndex()** method provides access to index, and
-
-*	**VSSPrefix getPrefix()** gives access to the prefix name.
 
 
 .. _QueryMap:
