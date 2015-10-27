@@ -3,11 +3,11 @@
 Query metrics support
 ================================
 
-To enable the estimation of the amount of data the node will return for any specific query,
-node software supports HEAD request queries, containing the same set of parameters as normal GET/POST queries.
+To give the estimation of the volume of data returned by the node for a query,
+the node software supports HEAD request queries.
+The parameter set of the HEAD request is the same as for the GET requests.
 
-As a response node software provides a set of HTTP headers indicating the estimate count of
-each XSAMS block elements:
+The VAMDC-specific HTTP headers that may be present in the response are the following:
 
 * *VAMDC-COUNT-SPECIES*
 	Total count of the atomic **Ion** and **Molecule** records with distinct SpecieID attribute.
@@ -39,31 +39,33 @@ each XSAMS block elements:
 getMetrics(...) method
 ------------------------
 	
-Producing such a response doesn't require to build a document tree, 
-so a dedicated plugin method is called by the node software 
-for each HEAD request.
+HTTP HEAD response may be produced without building the XSAMS document tree.
+For this purpose a dedicated plugin method is called by the node software 
+for each incoming HEAD request.
 	
 ::	
-	
 	public abstract Map<Dictionary.HeaderMetrics,Object> getMetrics(RequestInterface userRequest);
 	
-**userRequest**	has the same interface as the parameter of *buildXSAMS* method,
-but it doesn't expect to have XSAMS tree objects attached, so *XSAMSManager* object should not be accessed.
+**userRequest** parameter has the same interface as 
+the parameter of the plugin *buildXSAMS* method.
+Since the HEAD response will not transmit the XSAMS document body,
+there is no need to access the *XSAMSManager* object.
 
-Typical logic of the method would be like that:
+Typical logic of the method implementation would be the following:
 
-* Translate the query using the same translation strategy as builders use;
+* Translate the query using the same translation strategy as the builders use;
 
-* Convert the query into Count() using 
-	*org.vamdc.tapservice.query.QueryUtil.countQuery(DataContext,SelectQuery)* static method;
+* Convert the query into the *SELECT Count(\*) WHERE ...* using the
+  *org.vamdc.tapservice.query.QueryUtil.countQuery(DataContext,SelectQuery)* static method;
 
-* Add the resulting value to the map of headers;
+* Add the obtained count() value along with the corresponding HTTP header to the map of result headers;
 
-* If header value is greater than zero, set the value for *Last-Modified* header 
-	using RequestInterface *setLastModified(...)* method and 
-	*org.vamdc.tapservice.query.QueryUtil.lastTimestampQuery(...)* translator to obtain the 
-	value from a database last-modified date column.
-* iterate if more then one builder is normally used
+* If the obtained count() value is greater than zero, set the value of the *Last-Modified* header
+  by using the **RequestInterface** *setLastModified(...)* method and 
+  *org.vamdc.tapservice.query.QueryUtil.lastTimestampQuery(...)* translator to obtain the 
+  value from the database last-modified date column.
+
+* iterate over all primary tables if more than one primary table is used to query the database.
 
 
 Sample implementation
@@ -119,4 +121,5 @@ and Metrics.estimate has the following implementation::
 		
 	}
 
-Here, getExpression(...) methods are the same translator methods as used in corresponding XSAMS builders.
+Here, the getExpression(...) methods are the same translator 
+methods as used in corresponding XSAMS builders.
