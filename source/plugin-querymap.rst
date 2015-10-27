@@ -146,14 +146,18 @@ For example, in the case of filtering by the prefix:
 Query mapping scenarios
 -------------------------
 
-To obtain an Apache Cayenne Expression object, several mapping scenarios are provided, plus plugin developer 
-is free to implement his own one.
+To perform queries on the actual database, the incoming VAMDC-TAP query 
+needs to be adapted to the database structure. In the case of Apache Cayenne,
+*org.apache.cayenne.exp*.**Expression** object needs to be constructed,
+representing the query logic relative to the database primary table.
 
-Mapping of logic tree
+In this chapter the way to construct the query expressions from the incoming query is described.
+
+Mapping of the LogicTree
 +++++++++++++++++++++++++
 
-Mapping of logic tree nodes is always trivial and is one-to-one with 
-Cayenne Expression.andExp(), Expression.orExp(), Expression.notExp(), see the Cayenne Javadoc [CAYJAVADOC]_
+Mapping of the LogicTree nodes is simple with one-to-one mapping of **AND**, **OR** and **NOT** operators to
+Cayenne Expression.andExp(), Expression.orExp(), Expression.notExp(), see the Cayenne Javadoc [CAYJAVADOC]_.
 
 Usable example of such mapper is provided in *org.vamdc.tapservice.query.QueryMapper* class (vamdctap-querymapper library),
 that is bundled both with the TAPValidator and the node software.
@@ -161,25 +165,38 @@ that is bundled both with the TAPValidator and the node software.
 Mapping of RestrictExpression elements
 ++++++++++++++++++++++++++++++++++++++++
 
-Mapping of RestrictExpression elements may be a bit more tricky, since they contain lots of information:
+Mapping of the leaf nodes of the query tree, represented by the RestrictExpression elements,
+may be a bit more tricky. A lot of the information is contained in leaf nodes 
+that should be mapped into the query logic:
 
-*	prefix
-*	prefix index
-*	VAMDC dictionary keyword
+*	Keyword prefix
+*	Prefix index
+*	VAMDC dictionary Restrictable keyword
 *	comparison operator
-*	value/value set
+*	value or a set of values
 
-VAMDC keyword itself may map to one or more database columns,
-for example, **MoleculeInchiKey** keyword, in case of a database that contains all species within one table,
-says that the field is **InchiKey** and that we must verify that species we are looking at are actually molecules.
-To correctly handle such a keyword we will need to AND two Cayenne Expressions and add them to the mapped tree.
+VAMDC Restrictable keyword may correspond to one or several database fields.
+For example, let us have a database where all the species: 
+particles, atoms and molecules are stored in a single table, 
+where the inchikeys are defined for atoms and molecules, and there is a field indicating the species type.
+In this case the **MoleculeInchiKey** keyword in a query will 
+map to two internal **Expression** constraints: 
 
-Prefix and prefix index may also require a check for a certain field, like if element 
-is a reactant or product in chemical reaction.
-In this case it may make sense to loop over all defined prefixes using **Query.getPrefixes()** method, then
-filter the incoming query tree by the prefix with the **Query.getPrefixedTree(...)**, map it as usual,
-add the desired logic to the resulting expression and finally AND the mapped filtered subtree to the resulting query.
+a constraint on the inchikey field of the table,
 
+and a constraint indicating that the species is actually a molecule.
+
+To correctly handle such a keyword we will need to join two Cayenne Expressions with the Expression.andExp 
+operator, then add them to the mapped query tree.
+
+Prefix and prefix index may also impose a check for a certain field, like if element 
+is a reactant or product in a chemical reaction.
+
+To handle the prefixes, it is possible to loop through the prefixes present in the query
+by using **Query.getPrefixes()** method.
+The second step would be to filter the incoming query tree 
+by the prefix using the **Query.getPrefixedTree(...)** method, than map it to Cayenne Expressions,
+and finally join the obtained expressions with the Expression.andExp() method.
 
 Query Mapping Library
 --------------------------
