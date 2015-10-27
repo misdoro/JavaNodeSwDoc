@@ -198,34 +198,41 @@ The second step would be to filter the incoming query tree
 by the prefix using the **Query.getPrefixedTree(...)** method, than map it to Cayenne Expressions,
 and finally join the obtained expressions with the Expression.andExp() method.
 
+
+.. raw:: latex
+
+    \newpage
+
 Query Mapping Library
 --------------------------
 
-As a part of Java node software, a Query Mapper implementation is provided.
-It is able to map incoming query trees into cayenne Expression objects.
-Query Mapper implementation is a part of **vamdctap-querymapper** library,
-represented by two interfaces and two generic implementations within a package
-*org.vamdc.tapservice.querymapper*
+As a part of the Java Node software, a Query Mapper library (**vamdctap-querymapper**) is provided.
+It is able to map the incoming query trees into cayenne Expression objects.
+Two interfaces and generic implementations within a package
+*org.vamdc.tapservice.querymapper* are provided:
 
 	
-*	**KeywordMapper** interface defining an interface of RestrictExpression mapper;
-*	**KeywordMapperImpl** generic implementation, providing one-to-one mapping of
-	Restrictable keywords to database fields without value transformation.
-	In many cases node plugin may use extensions of this class, implementing value translation,
-	to-many fields mapping or prefix-conditional mapping.
+*	**KeywordMapper** defining an interface of a RestrictExpression mapper;
+*	**KeywordMapperImpl** a generic implementation, providing one-to-one mapping of
+	Restrictable keywords to the database fields. No value transformation is performed.
+	The node plugin may extend this class to implement the value translation,
+	one-to-many fields mapping, or even the prefix-conditional mapping.
 
-*	**QueryMapper** interface defining the library main interface;
-*	**QueryMapperImpl** generic implementation, keeping references to KeywordMappers 
-	and responsible for mapping parsed query trees to Cayenne Expressions. Boolean logic operations
-	between nodes are translated one-to-one with Cayenne andExp, orExp and notExp, KeywordMappers are
-	called for each RestrictExpression encountered.
+*	**QueryMapper** defining the library main interface;
+*	**QueryMapperImpl** providing a generic implementation. 
+	That implementation keeps the references to all the defined **KeywordMapper** instances.
+	It is capable of mapping the parsed query trees to Cayenne Expressions. 
+	Boolean logic of **LogicNode** tree is translated one-to-one 
+	by using the Apache Cayenne **Expression** *andExp()*, *orExp()* and *notExp()*.
+	For leaf nodes the registered **KeywordMapper** instances are called 
+	to translate the **RestrictExpression** into the Cayenne Expression objects.
 
-Using QueryMapper library
+Using the querymapper library
 ++++++++++++++++++++++++++++++++++
-From the plugin side work with the mapper library is performed the following way:
+From the plugin point of view the mapper library is used in the following way:
 
-*	In some class we initialize a static variable QueryMapper,
-	in constructor adding keyword mappers for each keyword supported by the node::
+*	A static instance of QueryMapper is initialized.
+	For each supported Restrictable keyword a new mapper is added::
 
 
 		public final static QueryMapper queryMapper= new QueryMapperImpl(){{
@@ -236,17 +243,20 @@ From the plugin side work with the mapper library is performed the following way
 					);
 		}};
 	
-	Here subsequent calls to **addNewPath** method define cayenne relations path
-	originating from different primary tables, both used for mapping.
-	The first call is for species query, the second for processes.
+	To define the database relations paths originating from different primary tables,
+	subsequent calls to **addNewPath** method are used.
+	Here for example the first path originates from the Species table, the second one
+	originates from the Processes.
 
-*	Own extensions of KeywordMapperImpl may be implemented to add the possibility to map 
-	keywords to multiple fields, translate values from query units to database units, or
-	add any other specific handling.
+*	If the advanced mapping is necessary, the class **KeywordMapperImpl**
+	may be extended. Extension classes may add for example a possibility to map 
+	keywords to multiple fields, translate values from query units to database units.
 	
-*	QueryMapper automatically keeps a list of Restrictable keywords supported by node,
-	it can be fetched using **public Collection<Restrictable> getRestrictables();** method.
+*	The **QueryMapper** implementation automatically handles a list of 
+	Restrictable keywords supported by the node. 
+	That list may be fetched by the **public Collection<Restrictable> getRestrictables()** method.
 	
-*	From XSAMS builder methods **mapAliasedTree(...)** or **mapTree(...)** methods are called to construct 
-	Cayenne Expressions from incoming query trees or filtered subtrees.
+*	The mapping of the incoming query trees or filtered subtrees is performed using 
+	the **QueryMapper** methods **mapAliasedTree(...)** or **mapTree(...)**.
+	Cayenne **Expression** objects are produced as the output.
 	
