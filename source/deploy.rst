@@ -4,75 +4,92 @@ VAMDC-TAP node deployment
 ==============================
 
 
-Install Java application server
---------------------------------
+Install a Java application server
+---------------------------------
 
-Java implementation of VAMDC-TAP node software is intended to be run as a web application within Java application server like Apache Tomcat.
-For installation instructions refer to the server documentation.
+The Java implementation of the VAMDC-TAP node software is provided as a web application archive (.war) 
+and is intended to be run under a Java application server like Apache Tomcat.
+For the server installation instructions refer to the server documentation.
 
 
-Deploy node software
-----------------------
+Deploy the node software
+-------------------------
 
-Deploying the Java implementation is a simple process that requires not that many steps.
-If your database plugin is already throughly tested with the VAMDC-TAP Validator, everything should just work.
+Once the node plugin is tested with TAPValidator and working,
+a few steps are needed to install(deploy) a VAMDC node using the Java Node software.
 
-#.	Deploy a recent **vamdctap-webservice** war using your server default method.
-	For Apache Tomcat it would require just to copy .war file into webapps directory with a desired 
-	webservice name.
+#.      Download the latest version of Java Node Software from the VAMDC site: http://www.vamdc.org/software/
+	What you need is a web application archive vamdctap-webservice-xxx.war
 
-#.	It is unlikely that you would need to modify servlet configuration file, but just in case, it's located at:
-	WEB-INF/web.xml
+#.	Deploy the downloaded .war file using your server default deploy method. 
+	(see the server documentation).
+	The contents of the .war archive is unpacked to *webapps/vamdctap.../* by the server.
 
-#.	Load the address *http://$BASEURL/config* to see the default configuration, adjust it as necessary and put 
-	into tapservice.conf in WEB-INF/config. For the full description of all configuration parameters, 
-	consult :ref:`config` section of this document;
+#.	The Apache Cayenne configuration files need to be copied to WEB-INF/classes/
+	subdirectory of the unpacked web application archive.
+	The cayenne project file needs to be renamed into **cayenne-project.xml**
+	Database credentials can be changed in WEB-INF/classes/cayenne-project.xml 
+	or in dbcp.properties if you are using Apache DBCP for the database connection pooling.
+
+#.	Load the address *http://$BASEURL/config* to see the default configuration.
+	To alter the options, a key-value pairs should be saved in a 
+	text file *WEB-INF/config/tapservice.conf*.
+	For a full list of options and their desriptions please refer to the section :ref:`config`.
 	
-#.	Copy your Apache Cayenne configuration xml to WEB-INF/config/cayenne/ (path can be adjusted in WEB-INF/web.xml)
-	Database credentials can be changed in WEB-INF/config/cayenne/....driver.xml (filename is specific to your database)
+#.	The node plugin and DAO jar files should be copied to *WEB-INF/lib/* directory 
+	of the deployed web application.
+	**!WARNING!** Never try to copy those jars to the webserver or java system library paths.
+	Such a configuration will never work, causing unexpected ClassCast exceptions.
+	
+#.	The application or server should be reloaded to update the configuration and load the libraries.
+	
+#.	Try to access the Capabilities and Availability endpoints of the service.
+	They should be accessible through *http://$BASEURL/VOSI/capabilities* and 
+	*http://$BASEURL/VOSI/availability*. Availability status should be
+	**Service is currently available: true**	
 
-#.	Copy your DAO jar and plugin jar (or it can be combined in single jar file) to WEB-INF/lib/ directory of your servlet.
-	**!WARNING!** Don't try to copy it to webserver or java system library directory, 
-	it won't work, you'll be getting strange ClassCast exceptions on every request.
-	
-#.	Restart application server or reload application to update the configuration.
-	If you open the application root URL, you will get an index page with all relevant addresses.
-	
-#.	Check availability and capabilities if everything is fine.
-	Try some test queries with VAMDC-TAP Validator
-	
 #.	**!WARNING!** Do a backup copy of all configuration files and .jar files that were put or adjusted 
-	somewhere in the deployed application folder, notably the node configuration files.
-	All those files will be erased on every **vamdctap-webservice** war update
+	in the deployed application folder, notably the node configuration files.
+	All those files will be erased on every **vamdctap-webservice** war redeployment 
+	and should be recopied in place every time the Java Node Software web application
+	is updated or relocated.
+
+#.	Once the deployment procedure is complete, the node operation 
+	should be tested using the TAPValidator application.
+	In the TAPValidator configuration the network mode should be chosen and the capabilities endpoint
+	address of the node should be indicated.
 
 	
 .. _config:
 	
-VAMDC-TAP service configuration file
+service configuration file
 ----------------------------------------
 
 Java VAMDC-TAP service is configured through a single file, containing a set of key-value pairs.
 
-Once service is deployed, you may get configuration info through 
-http://host.name:8080/tapservice/config URL, where host.name:8080/tapservice is the url to your web application deployment.
-If service is not configured, only the default configuration set is presented.
+Once service is deployed, you may get the current configuration information 
+by accessing the config endpoint:
+*http://host.name:8080/tapservice/config*. Here *host.name:8080/tapservice*
+is the url of the web application deployment.
+
 
 Default configuration parameters
 ++++++++++++++++++++++++++++++++++++++++++
 
-::
+By default, the node parameters take the following values::
 
-	force_sources=true
 	limits_enable=false
 	limit_states=-1
-	selfcheck_interval=60
-	dao_test_class=org.vamdc.database.dao.ClassName
-	test_queries=select species where atomsymbol like '%';
-	xsams_id_prefix=DBNAME
-	baseurl=http://host.name:8080/tapservice
-	database_plug_class=org.vamdc.database.builders.ClassName
-	xml_prettyprint=false
 	limit_processes=-1
+	selfcheck_interval=60
+	database_plug_class=org.vamdc.database.tap.OutputBuilder
+	dao_test_class=org.vamdc.database.dao.ClassName
+	xsams_id_prefix=DBNAME
+	baseurl=http://host.name:8080/tapservice#http://mirror.host/tapservice
+	xml_prettyprint=false
+	test_queries=select species where atomsymbol like '%';select * where inchikey='UGFAIRIUMAVXCW-UHFFFAOYSA-N'
+	returnables=keyword1;keyword2;...
+	processors=ivo://vamdc/processor_1#ivo://vamdc/processor2
 
 
 Detailed parameters description
@@ -85,19 +102,21 @@ Detailed parameters description
 *	**limit_processes** = N - limit maximum output processes count in document to N, "-1" disables the limit.
 
 
-*	**selfcheck_interval** = N interval in seconds between service availability self checks.
-	First check is initiated after the first request to /VOSI/availability endpoint.
-	Background checks allow more accurate tracking of "upSince", "backAt" and "downAt" time attributes.
+*	**selfcheck_interval** = N interval in seconds between the node availability self checks.
+	First check is initiated upon the request to /VOSI/availability endpoint.
+	Background checks allow the accurate tracking 
+	of "upSince", "backAt" and "downAt" time attributes.
 
 
-*	**database_plug_class** = *org.vamdc.database.builders.ClassName*
-	Class name for builder implementing org.vamdc.tapservice.api.DatabasePlugin interface
-	It is instantiated on tapservice startup and all communication between framework and builders go through it.
+*	**database_plug_class** = *org.vamdc.database.tap.OutputBuilder*
+	The name of the class implementing the *org.vamdc.tapservice.api*.**DatabasePlugin** interface.
+	An instance of that class is created on the web application startup.
+	Methods of this class are invoked to construct a response for the incoming request.
 
 *	**dao_test_class** = *fully.qualified.apache.cayenne.dao.Object*
-	class name for self availability checking,
-	it must be the table with more than 10 records.
-	May be omitted, but then availability endpoint won't work properly.
+	The name of a Cayenne DAO class, used for the node availability checking.
+	A table behind that class should have more than 10 records.
+	This option may be omitted but in that case the availability endpoint will not work properly.
 
 *	**xsams_id_prefix** = *DBNAME*
 	Prefix for XSAMS library id generator org.vamdc.xsams.util.IDs, used to produce all XML 
@@ -105,8 +124,10 @@ Detailed parameters description
 	of identifiers in XSAMS documents.
 
 *	**baseurl** = *http://host.name:8080/tapservice*
-	Base url used in VOSI/capabilities output, must contain globally accessible URL pointing to the VAMDC-TAP service
-	web application root. Multiple addresses may be specified to indicate mirror nodes, separated by *#* symbol.
+	Base url used in VOSI/capabilities output, must contain globally accessible URL 
+	pointing to the VAMDC-TAP service web application root. 
+	Multiple addresses may be specified to indicate mirror nodes, separated by *#* symbol.
+	The first address must point to the node itself.
 
 *	**xml_prettyprint** = *(true|false)*
 	Produce pretty-printed XML documents or output everything in a single line of text with no linefeeds.
@@ -119,7 +140,12 @@ Detailed parameters description
 	On the other hand such queries must produce compact documents, since those queries would be used 
 	for periodic node testing.
 	
+*	**returnables** a semicolon-separated list of Returnable keywords that will be shown in the
+	Capabilities endpoint output. May be left empty.
 
+*	**processors** a list of IVOA identifiers of the preferred XSAMS processors.
+	This list is used by the vamdc portal to suggest the processors.
+	Processor identifiers may be obtained from the VAMDC registry.
 
 Cayenne configuration using DBCP
 ------------------------------------
@@ -128,38 +154,48 @@ To avoid database connection time-out errors, Apache *commons-dbcp* library shou
 junction with Apache Cayenne. Configuration change for this case is simple and straight-forward.
 **vamdctap-webservice** application archive already comes with bundled *commons-dbcp* jar.
 
-* First, in cayenne.xml **node** element *factory* attribute have to be changed for org.apache.cayenne.conf.DBCPDataSourceFactory
-	and *datasource* attribute should indicate a file name that will contain key-value pairs of dbcp configuration;
+* 	in the file cayenne-project.xml the *factory* attribute of the **node** element should be changed 
+	to org.apache.cayenne.conf.DBCPDataSourceFactory.
 	
-* Second, dbcp configuration file should be put in *cayenne* configuration directory
-	with the name same as specified in *datasource* attribute and the following parameters:
+* 	dbcp.properties configuration file should be put next to 
+	the cayenne-project.xml in the classes directory.
+	the following parameters should be put into the file::
 	
-	- cayenne.dbcp.driverClassName=com.mysql.jdbc.Driver
-	- cayenne.dbcp.url=jdbc:mysql://hostname:port/databasename
-	- cayenne.dbcp.username=databaseUserName
-	- cayenne.dbcp.password=databasePassword
+	 cayenne.dbcp.driverClassName=com.mysql.jdbc.Driver
+	 cayenne.dbcp.url=jdbc:mysql://hostname:port/databasename
+	 cayenne.dbcp.username=databaseUserName
+	 cayenne.dbcp.password=databasePassword
 
-	Other DBCP parameters also may be adjusted, see http://commons.apache.org/dbcp/configuration.html for more information.
+Other DBCP parameters may be adjusted, 
+please consult http://commons.apache.org/dbcp/configuration.html for more information.
 
 
 
 Database updates and cache
 ----------------------------
 
-Java node software maintains it's own database cache. If database fields are updated, this cache needs to be purged. 
-To force node to purge it's caches, request to  /clear_cache resource needs to be sent.
+Java node software maintains its own database cache. 
+If database fields are updated, this cache needs to be purged. 
+To force node to purge its caches, request to $BASEURL/clear_cache resource needs to be sent.
 The full URL will be http://host.name:8080/tapservice/clear_cache. 
-As a result, single text line will be sent indicating the number of records that were contained in the cache.
-This URL may be accessed either manually, included as a frame in node database administration panel or accessed by
+Result document contains a single line of text, indicating the number 
+of records that were contained in the cache.
+
+This URL should be called every time the database contents is updated.
+It may be accessed either manually, included as an iframe in the node 
+database administration interface, or accessed by
 a special script that tracks database modifications in some way.
 
 
 Node mirroring
 ----------------------
 
-The best way to set up node mirrors is to configure database replication on each mirror and deploy
-multiple instances of node software on mirror servers, each of them using own mysql installation. 
+The best way to set up node mirrors is to configure database replication and deploy
+an instance of the node software on each mirror.
+
 Deployment procedure of node software on master server and mirrors is the same.
+The only difference will be the order of the addresses in the **baseurl** 
+configuration parameter on each of the mirrors. 
 
 Mysql master server configuration
 +++++++++++++++++++++++++++++++++++++
@@ -239,13 +275,22 @@ In detail mysql replication is described in the official manual:
 	http://dev.mysql.com/doc/refman/5.5/en/replication.html
 	
 	
-Node mirror registration
-++++++++++++++++++++++++++
+Node registration
+--------------------------
 
-Procedure for registering a new mirror is very simple:
-In configuration of main node and all mirrors another url needs to be added to the end of 
-**baseurl** parameter, separated with hash (#) symbol.
+To update the node registration to include the mirror nodes,
+two steps are needed:
 
-After reload of master node web application, registry needs to be updated with new Capabilities including new mirror.
-For registry update, please contact VAMDC registry maintainer via support@vamdc.org.
+*	In the configuration of the main node and all mirrors the
+	**baseurl** parameter should be set up to include the node and mirrors, 
+	separated with hash (#) symbol.
+	On mirror nodes, the url of the mirror itself should be the first in that list.
+	Java node web application should be reloaded to update the configuration.
+
+*	Registry record of the node should be updated with new Capabilities including new mirror.
+
+
+In any case for the registry update please contact the VAMDC registry 
+maintainer via support@vamdc.org.
+
 
