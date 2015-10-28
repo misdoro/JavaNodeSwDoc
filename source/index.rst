@@ -11,8 +11,12 @@ Java VAMDC-TAP node software documentation
 .. toctree::
    :maxdepth: 2
    
+   preface
+
+   webservice
+
    intro
-   
+
    plugin-arch
    plugin-test
    plugin-datamodel
@@ -21,6 +25,6 @@ Java VAMDC-TAP node software documentation
    plugin-metrics
    
    deploy
-   webservice
    
    biblio
+
