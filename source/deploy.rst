@@ -62,15 +62,19 @@ a few steps are needed to install(deploy) a VAMDC node using the Java Node softw
 	
 .. _config:
 	
-service configuration file
+Node Configuration File
 ----------------------------------------
 
-Java VAMDC-TAP service is configured through a single file, containing a set of key-value pairs.
+Java VAMDC-TAP node is configured through a single file, containing a set of key-value pairs.
 
-Once service is deployed, you may get the current configuration information 
+The configuration may be altered by modifying the file *WEB-INF/config/tapservice.conf*
+in the web application root directory. Once the new parameters are set, the application should be
+reloaded to take the account of modifications.
+
+The current node configuration may be retrieved  
 by accessing the config endpoint:
 *http://host.name:8080/tapservice/config*. Here *host.name:8080/tapservice*
-is the url of the web application deployment.
+is the url of the deployed web application.
 
 
 Default configuration parameters
@@ -145,7 +149,17 @@ Detailed parameters description
 
 *	**processors** a list of IVOA identifiers of the preferred XSAMS processors.
 	This list is used by the vamdc portal to suggest the processors.
-	Processor identifiers may be obtained from the VAMDC registry.
+	Processor identifiers may be obtained from the VAMDC registry using the TAPValidator application
+	(starting from version 12.07r2). 
+
+	To obtain the configuration parameter, open the TAPValidator,
+	in the menu bar select Tools->Processors. A window will appear, containing the table of the
+	registered processors. Select the lines while holding the ctrl key.
+	Press the "Copy Selected" button. 
+	A text line containing the processors configuration option is copied to clipboard and may be
+	pasted directly into the configuration file using your preferred text editor.
+      
+	
 
 Cayenne configuration using DBCP
 ------------------------------------
